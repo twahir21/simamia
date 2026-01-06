@@ -1,25 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-import {
-  useFonts,
-  Poppins_400Regular,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from '@expo-google-fonts/poppins';
+import "../global.css";
 
 
 export default function App() {
-    const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  });
 
-  if (!fontsLoaded) {
-    return null; // or splash screen
-  }
   return (
     <LinearGradient
       colors={['#0f2027', '#203a43', '#2c5364']}
@@ -37,6 +23,12 @@ export default function App() {
       </View>
 
       <StatusBar style="light" />
+
+      <View className="flex-1 items-center justify-center bg-white">
+      <Text className="text-xl font-bold text-blue-500">
+        Welcome to Nativewind!
+      </Text>
+    </View>
     </LinearGradient>
   );
 }
@@ -60,14 +52,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: 10,
-    fontFamily: 'Poppins_700Bold', 
   },
   subtitle: {
     fontSize: 16,
     color: '#dcdcdc',
     textAlign: 'center',
     marginBottom: 30,
-    fontFamily: 'Poppins_400Regular',  
 
   },
   button: {
@@ -79,7 +69,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#2c5364',
     fontSize: 16,
-    fontFamily: 'Poppins_600SemiBold',
     fontWeight: '600',
   },
 });
