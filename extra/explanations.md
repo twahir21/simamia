@@ -1,36 +1,42 @@
 # SIMAMIA APP
 
 1. Home page itakuwa na vitu vitatu straight foward three analytics:
-- How much have I sold today?
-- low stock products
-- total debit money
-- cash sales
-- mobile money sales
 
+- How much have I sold today?
+- low stock products only if > 0
+- total outstanding debts
+- expired products only if > 0
+
+
+
+ (4 max buttons)
 (in top bar there is name logo and time)
 
 and big three buttons (Sale, stock and Debts). that's all no noise, no charts
-this screen opens atleast 50+ times a day.
+this screen opens atleast 50+ times a day. Sale should be of diff color 
 
 2. Chini yake kutakuwa na tabs (4 parts)
 
-[a]. Swipe left ita switch bottom tabs
+[a]. Swipe left (dots for pagination)/ tap the bottom icons to switch bottom tabs
 
 3. Tab 1: Orders
 hii ita deal na orders kwa watu walio mbali (waliopiga simu) na jambo la delivery.
+status: pending -> out for delivery -> completed
+simple order list
+payment status pending / paid / canceled, default to pending. if updated to paid (go to save the sales).
 
-4. Tab 2: Pages
-Hii ita deal na visual buttons design user friendly other pages kama products/items e.t.c see picture
-named chat-home.png if pages are long scroll down
+4. Tab 2: Pages (non-daily actions)
+Hii ita deal na visual buttons design user friendly other pages kama products/items, categories, customers, suppliers e.t.c see picture named chat-home.png if pages are long scroll down
 
-5. Tab 3: Reports
-hii ita deal na ripoti za aina zote
+5. Tab 3: Reports (should be in the pages)
+hii ita deal na ripoti za aina zote. Pre-calculate daily totals in sqlite so app opens < 2s
+no lag when opening reports, if computations are heavy open with waiting loader (in report part only - lazy loaded)
 
 6. Tab 4: Settings
-Mambo yote dynamic ni huku , ku lock app etc. 
+Mambo yote dynamic ni huku , ku lock app etc. (lock app will never hides/block viewing past data but will block only adding new data)
 
 7. Sales page (after sales click in home)
- have add to cart. All methods use quantity default as 1, price auto-filled
+ have add to cart. All methods use quantity default as 1, price auto-filled and editable
  and have 4 main tabs (customizable) default to scan 
  others are smart search (search with auto-suggestion name)
  then payment type: cash, mobile payment or debt autosave sales after any of type completes
@@ -39,6 +45,11 @@ Mambo yote dynamic ni huku , ku lock app etc.
  customer is must in debt only. use Guest or provide transaction_id (for the whole cart)
  design in such a way that service selling is acceptable (e.g. repair, saloon, etc.)
  sales takes < 3 taps.
+
+ - last payment method is remembered so that user will not switch too much.
+ - cursor auto-focus ALWAYS (to reduce manual tapping)
+ - no save sales button (it is autocompleted after processing any of payment type)
+ - avoid user confirmation in many places (too much)
 
 8. Stock page
  show name, remaining quantity, selling price, low stock indicator (red)
