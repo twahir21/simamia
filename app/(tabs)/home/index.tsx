@@ -12,7 +12,7 @@ export default function App() {
 //   }, []);
 
   return <>
-    <View className="flex-1 bg-sky-50 px-4 pt-4">
+    <View className="flex-1 bg-white px-4 pt-4">
 
       {/* Top Section */}
       <View>
@@ -22,7 +22,7 @@ export default function App() {
         </Text>
 
         {/* Sales */}
-        <View className="mb-4 bg-sky-100 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
+        <View className="mb-4 bg-sky-50 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
           <Ionicons name="cash-outline" size={24} color="#ee" />
           <View className="ml-3">
             <Text className="text-xs text-gray-500 mb-1">
@@ -35,7 +35,7 @@ export default function App() {
         </View>
 
         {/* Debts */}
-        <View className="mb-4 bg-sky-100 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
+        <View className="mb-4 bg-sky-50 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
           <Ionicons name="card-outline" size={24} color="#dc2626" />
           <View className="ml-3">
             <Text className="text-xs mb-1">
@@ -48,7 +48,7 @@ export default function App() {
         </View>
 
         {/* Profit */}
-        <View className="mb-4 bg-sky-100 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
+        <View className="mb-4 bg-sky-50 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
           <Ionicons name="trending-up-outline" size={24} color="#15803d" />
           <View className="ml-3">
             <Text className="text-xs text-gray-500 mb-1">
@@ -63,7 +63,7 @@ export default function App() {
         {/* Row: Low Stock + Expired Products */}
         <View className="flex-row gap-3 mb-4">
           {/* Low Stock */}
-          <View className="flex-1 bg-sky-100 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
+          <View className="flex-1 bg-sky-50 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
             <Ionicons name="cube-outline" size={22} color="#ee" />
             <View className="ml-2">
               <Text className="text-xs text-gray-500 mb-1">
@@ -76,7 +76,7 @@ export default function App() {
           </View>
 
           {/* Expired Products */}
-          <View className="flex-1 bg-sky-100 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
+          <View className="flex-1 bg-sky-50 border border-sky-500 rounded-2xl p-4 shadow-sm flex-row items-center">
             <Ionicons name="alert-circle-outline" size={22} color="#ee" />
             <View className="ml-2">
               <Text className="text-xs text-gray-500 mb-1">

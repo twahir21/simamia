@@ -12,7 +12,7 @@ export default function HomeLayout() {
           name="index"
           options={{
             headerStyle: {
-            //   backgroundColor: "#0284c7",
+              // backgroundColor: "#e0f2fe", 
             },
             // headerShadowVisible: false, // faster, cleaner
             headerTitleAlign: "left",

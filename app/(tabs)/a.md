@@ -1,3 +1,4 @@
+// components/OrdersScreen.tsx
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -7,30 +8,13 @@ import {
   TextInput,
   Modal,
   Alert,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Entypo, FontAwesome, Fontisto, Ionicons } from '@expo/vector-icons';
-import Feather from '@expo/vector-icons/Feather';
-import { orders } from '@/const/orders';
-// types/order.ts
-export type DeliveryStatus = 'pending' | 'onway' | 'completed';
-export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
+import { Search, Filter, X, Phone, Clock, Package, CreditCard, ChevronDown, MoreVertical } from 'lucide-react-native';
+import { Order, DeliveryStatus, PaymentStatus, SortOption, FilterOption } from '../types/order';
+import { orders } from '../data/orders';
 
-export interface Order {
-  id: string;
-  phone: string;
-  code: string;
-  date: string;
-  time: string;
-  delivery: DeliveryStatus;
-  payment: PaymentStatus;
-}
-
-export type SortOption = 'date-desc' | 'date-asc' | 'pending-first' | 'onway-first';
-export type FilterOption = 'all' | 'pending' | 'onway' | 'completed' | 'unpaid';
-
-const Orders = () => {
+const OrdersScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
@@ -110,7 +94,7 @@ const Orders = () => {
   const callCustomer = (phone: string) => {
     Alert.alert('Call Customer', `Call ${phone}?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Call', onPress: async () => await Linking.openURL(`tel:${phone}`)},
+      { text: 'Call', onPress: () => console.log(`Calling ${phone}`) },
     ]);
   };
 
@@ -143,20 +127,6 @@ const Orders = () => {
     );
   };
 
-  const openWhatsApp = (name: string, phone: string, shortCode: string) => {
-    const msg = `Hello ${name ?? ""}, your order ${shortCode} is being processed.`;
-
-    if (phone.startsWith("0")) phone = "255" + phone.substring(1);
-
-    const url = `https://wa.me/${phone.replace("+", "").replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
-    Linking.openURL(url);
-  };
-
-  const sendSMS = (phone: string, shortCode: string) => {
-    const msg = `Your order ${shortCode} is being processed.`;
-    Linking.openURL(`sms:${phone}?body=${encodeURIComponent(msg)}`);
-  };
-
   // Action modal
   const ActionModal = ({ order }: { order: Order }) => (
     <Modal
@@ -170,18 +140,18 @@ const Orders = () => {
           <View className="flex-row justify-between items-center mb-6">
             <Text className="text-xl font-bold">Order Actions</Text>
             <TouchableOpacity onPress={() => setSelectedOrder(null)}>
-              <Feather size={24} name="x-circle" color="#666" />
+              <X size={24} color="#666" />
             </TouchableOpacity>
           </View>
 
           <View className="space-y-4">
             <Text className="text-lg font-semibold">Delivery Status</Text>
-            <View className="flex-row gap-3">
+            <View className="flex-row space-x-2">
               {(['pending', 'onway', 'completed'] as DeliveryStatus[]).map(status => (
                 <TouchableOpacity
                   key={status}
                   className={`px-4 py-3 rounded-lg ${
-                    order.delivery === status ? 'bg-blue-500' : 'bg-gray-100 border border-gray-500'
+                    order.delivery === status ? 'bg-blue-500' : 'bg-gray-100'
                   }`}
                   onPress={() => {
                     updateDeliveryStatus(order.id, status);
@@ -197,12 +167,12 @@ const Orders = () => {
             </View>
 
             <Text className="text-lg font-semibold mt-4">Payment Status</Text>
-            <View className="flex-row gap-3 flex-wrap">
+            <View className="flex-row space-x-2 flex-wrap">
               {(['pending', 'paid', 'cancelled'] as PaymentStatus[]).map(status => (
                 <TouchableOpacity
                   key={status}
                   className={`px-4 py-3 rounded-lg mb-2 ${
-                    order.payment === status ? 'bg-green-500' : 'bg-gray-100 border border-gray-500'
+                    order.payment === status ? 'bg-green-500' : 'bg-gray-100'
                   }`}
                   onPress={() => {
                     updatePaymentStatus(order.id, status);
@@ -226,6 +196,15 @@ const Orders = () => {
               <Text className="text-white text-center font-semibold">Delete Order</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              className="border border-gray-300 p-4 rounded-lg"
+              onPress={() => {
+                callCustomer(order.phone);
+                setSelectedOrder(null);
+              }}
+            >
+              <Text className="text-center font-semibold">📞 Call Customer</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -233,20 +212,17 @@ const Orders = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-white px-6 py-0 border-b border-gray-400">
-        <View className="flex-row justify-between items-center mb-2">
-          <View className="flex-row items-center gap-2">
-              <Feather name="box" size={24} color="#1F2937" />
-              <Text className="text-xl font-bold text-gray-800">Orders</Text>
-          </View>  
+      <View className="bg-white px-6 py-4 border-b border-gray-200">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-3xl font-bold text-gray-900">Orders</Text>
           <Text className="text-gray-600">{filteredOrders.length} orders</Text>
         </View>
 
         {/* Search Bar */}
-        <View className="flex-row items-center bg-gray-100 border border-gray-400 rounded-xl px-4 mb-3">
-          <Ionicons name="search-sharp" size={20} color="#9CA3AF" />
+        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-3">
+          <Search size={20} color="#9CA3AF" />
           <TextInput
             className="flex-1 ml-3 text-gray-800"
             placeholder="Search by phone or order code..."
@@ -255,19 +231,19 @@ const Orders = () => {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Feather size={20} name="x-circle" color="#9CA3AF" />
+              <X size={20} color="#9CA3AF" />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Filter & Sort Row */}
-        <View className="flex-row gap-3">
+        <View className="flex-row space-x-3">
           <TouchableOpacity
-            className="flex-1 bg-white border border-gray-400 rounded-xl px-4 py-3 flex-row items-center justify-between"
+            className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 flex-row items-center justify-between"
             onPress={() => setShowFilterModal(true)}
           >
             <View className="flex-row items-center">
-              <FontAwesome name="filter" size={18} color="#4B5563" />
+              <Filter size={18} color="#4B5563" />
               <Text className="ml-2 text-gray-700">Filter</Text>
             </View>
             <Text className="text-gray-600 font-medium">
@@ -278,7 +254,7 @@ const Orders = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 bg-white border border-gray-400 rounded-xl px-4 py-3 flex-row items-center justify-between"
+            className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 flex-row items-center justify-between"
             onPress={() => {
               const sortOptions: SortOption[] = ['date-desc', 'date-asc', 'pending-first', 'onway-first'];
               const currentIndex = sortOptions.indexOf(sortBy);
@@ -293,7 +269,7 @@ const Orders = () => {
                  sortBy === 'date-asc' ? 'Oldest' :
                  sortBy === 'pending-first' ? 'Pending First' : 'On Way First'}
               </Text>
-              <FontAwesome name="sort" size={24} color="#4B5563" />
+              <ChevronDown size={18} color="#4B5563" />
             </View>
           </TouchableOpacity>
         </View>
@@ -303,7 +279,7 @@ const Orders = () => {
       <ScrollView className="flex-1 px-4 py-6">
         {filteredOrders.length === 0 ? (
           <View className="items-center justify-center py-20">
-            <Entypo name="emoji-sad" size={64} color="#D1D5DB" />
+            <Package size={64} color="#D1D5DB" />
             <Text className="text-xl font-semibold text-gray-500 mt-4">No orders found</Text>
             <Text className="text-gray-400 mt-2">Try changing your search or filter</Text>
           </View>
@@ -311,54 +287,31 @@ const Orders = () => {
           filteredOrders.map(order => (
             <View
               key={order.id}
-              className="bg-white rounded-2xl shadow-sm border border-sky-500 mb-8 overflow-hidden"
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-4 overflow-hidden"
             >
               {/* Card Header */}
-              <View className="p-5 border-b border-sky-500">
+              <View className="p-5 border-b border-gray-100">
                 <View className="flex-row justify-between items-start mb-3">
                   <View>
                     <View className="flex-row items-center mb-1">
-                      <FontAwesome name="phone" size={16} color="#4B5563" />
+                      <Phone size={16} color="#4B5563" />
                       <Text className="ml-2 text-lg font-semibold text-gray-900">
                         {order.phone}
                       </Text>
                     </View>
                     <Text className="text-3xl font-bold text-blue-600">{order.code}</Text>
                   </View>
-                  <TouchableOpacity onPress={() =>
-                    Alert.alert("Secondary Contact", `Choose other method to reach Twahir`, [
-                      { 
-                        text: "WhatsApp", 
-                        onPress: () => openWhatsApp("Twahir", order.phone, "E56H") // Wrapped in arrow function
-                      },
-                      { 
-                        text: "SMS", 
-                        onPress: () => sendSMS(order.phone, "E78S") // Wrapped in arrow function
-                      },
-                      { text: "Cancel", style: "cancel" },
-                    ])
-                  }>
-                    <Entypo name="dots-three-horizontal" size={24} color="#6B7280" />
+                  <TouchableOpacity onPress={() => setSelectedOrder(order)}>
+                    <MoreVertical size={24} color="#6B7280" />
                   </TouchableOpacity>
                 </View>
 
                 <View className="flex-row items-center">
-                  <Fontisto name="date" size={16} color="black" />
+                  <Clock size={16} color="#4B5563" />
                   <Text className="ml-2 text-gray-600">
                     {order.date} • {order.time}
                   </Text>
                 </View>
-                <Text className='mt-3 text-lg font-bold text-gray-700'>Order ID: #T08J</Text>
-
-                  <View className="mt-3 bg-sky-50 rounded-lg p-3 border border-sky-500">
-                    <Text className="text-lg font-bold text-gray-800">Cart :</Text>
-                    <View className="flex-row flex-wrap items-center mt-2">
-                      <Text className="text-gray-700">2 x Chips, 1 x Burger, 4 x Juice</Text>
-                      <Text className="ml-2 px-2 py-0.5 text-xs font-semibold text-white bg-sky-500 rounded-full">
-                        +3 more
-                      </Text>
-                    </View>
-                  </View>
               </View>
 
               {/* Status Row */}
@@ -374,9 +327,9 @@ const Orders = () => {
               </View>
 
               {/* Quick Actions */}
-              <View className="flex-row border-t border-sky-500">
+              <View className="flex-row border-t border-gray-100">
                 <TouchableOpacity
-                  className="flex-1 py-4 items-center border-r border-sky-500"
+                  className="flex-1 py-4 items-center border-r border-gray-100"
                   onPress={() => callCustomer(order.phone)}
                 >
                   <Text className="text-blue-600 font-semibold">📞 Call</Text>
@@ -405,7 +358,7 @@ const Orders = () => {
             <View className="flex-row justify-between items-center mb-6">
               <Text className="text-xl font-bold">Filter Orders</Text>
               <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Feather size={24} name="x-circle" color="#666" />
+                <X size={24} color="#666" />
               </TouchableOpacity>
             </View>
 
@@ -451,9 +404,8 @@ const Orders = () => {
 
       {/* Action Modal */}
       {selectedOrder && <ActionModal order={selectedOrder} />}
-
     </SafeAreaView>
   );
 };
 
-export default Orders;
+export default OrdersScreen;
