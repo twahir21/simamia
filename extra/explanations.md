@@ -56,7 +56,12 @@ Mambo yote dynamic ni huku , ku lock app etc. (lock app will never hides/block v
 - if product found beep success sound and auto-add to cart with quantity = 1
 if scanned again just add quantity
 
+**smart search**
+
 **Every tab**
+- Remember last used tab
+- on app start ask what business is 
+- on settings allow 2 tab customizations. (load from storage)
 - At the bottom of page show last scanned item (highlighed)
 quantity controls (+/-) which onhold to speed up and price (tap to edit)
 primarily readonly. Also show total cost (cashier can ask customer)

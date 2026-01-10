@@ -22,6 +22,8 @@ Expo now recommends using **EAS Build**, which supports both managed and bare wo
    - This creates an `eas.json` file where you can define build profiles.
 4. **Build APK**
    - For a development APK (easy to install on devices):
+   first run eas init --id (give your id from expo account)
+   then check dependencies with npx expo install --check
      ```bash
      eas build -p android --profile preview
      ```

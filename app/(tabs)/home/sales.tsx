@@ -13,14 +13,14 @@ function FavoritesScreen() { return <View><Text>Favorites</Text></View>; }
 
 const tabComponents: Record<string, React.ComponentType<any>> = {
   Scan: ScanScreen,
-  "Smart Search": SmartSearchScreen,
+  Search: SmartSearchScreen,
   Grid: GridScreen,
-  "Quick Sale": QuickSaleScreen,
+  Quick: QuickSaleScreen,
   Favorites: FavoritesScreen,
 };
 
 export default function Sales() {
-  const [selectedTabs, setSelectedTabs] = useState<string[]>(["Scan", "Smart Search", "Favorites"]);
+  const [selectedTabs, setSelectedTabs] = useState<string[]>(["Scan", "Search", "Favorites", "Quick"]);
   const [initialTab, setInitialTab] = useState("Scan");
 
   useEffect(() => {

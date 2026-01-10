@@ -20,7 +20,12 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "twahir21.learn"
+      "package": "twahir21.learn",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "output": "static",
@@ -41,7 +46,6 @@
           }
         }
       ],
-      "expo-font",
       [
         "expo-navigation-bar",
         {
@@ -66,8 +70,8 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
-      ]
-
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -76,8 +80,17 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "445cd504-bc3e-4dc7-8102-a19380d02665"
+        "projectId": "e859c918-e03b-4176-a376-bc2eec97dd30"
+      },
+      "expo-navigation-bar": {
+        "backgroundColor": "#0f172a",
+        "barStyle": "light",
+        "borderColor": "#1f2937",
+        "visibility": "visible",
+        "behavior": "inset-swipe",
+        "position": "relative"
       }
-    }
+    },
+    "owner": "twahir21"
   }
 }
