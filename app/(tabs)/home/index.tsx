@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -12,7 +12,8 @@ export default function App() {
 //   }, []);
 
   return <>
-    <View className="flex-1 bg-white px-4 pt-4">
+  <ScrollView>
+        <View className="flex-1 bg-white px-4 pt-4">
 
       {/* Top Section */}
       <View>
@@ -124,7 +125,7 @@ export default function App() {
         <Link href="/(tabs)/home/debts" asChild>
           <TouchableOpacity
             activeOpacity={0.85}
-            className="bg-sky-600 py-4 rounded-2xl flex-row justify-center items-center"
+            className="bg-sky-600 py-4 rounded-2xl flex-row justify-center items-center mb-3"
           >
             <Ionicons name="card-outline" size={20} color="#E3E3E3" />
             <Text className="ml-2 text-white text-base font-medium">
@@ -135,5 +136,6 @@ export default function App() {
       </View>
 
     </View>
+  </ScrollView>
   </>
 }

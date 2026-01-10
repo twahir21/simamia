@@ -39,7 +39,7 @@ Mambo yote dynamic ni huku , ku lock app etc. (lock app will never hides/block v
  have add to cart. All methods use quantity default as 1, price auto-filled and editable
  and have 4 main tabs (customizable) default to scan 
  others are smart search (search with auto-suggestion name)
- then payment type: cash, mobile payment or debt autosave sales after any of type completes
+ then payment type: cash, digital payment or debt autosave sales after any of type completes
  autofocus next input, thumb-friend. (no modal unless is must)
 
  customer is must in debt only. use Guest or provide transaction_id (for the whole cart)
@@ -50,6 +50,25 @@ Mambo yote dynamic ni huku , ku lock app etc. (lock app will never hides/block v
  - cursor auto-focus ALWAYS (to reduce manual tapping)
  - no save sales button (it is autocompleted after processing any of payment type)
  - avoid user confirmation in many places (too much)
+
+ **scan**
+- If a user scan absent/unregistered product to buzz with error sound and give the message (product not found) and show shortcut to registration page (with filling barcode in it).
+- if product found beep success sound and auto-add to cart with quantity = 1
+if scanned again just add quantity
+
+**Every tab**
+- At the bottom of page show last scanned item (highlighed)
+quantity controls (+/-) which onhold to speed up and price (tap to edit)
+primarily readonly. Also show total cost (cashier can ask customer)
+
+- Two buttons SAVE SALES (more visible) and VIEW CART (for remove/edit multiple items)
+
+- switching between tabs do not affect the cart.
+- thumb-friend rule.
+
+- When tap SAVE SALES slide down to save the method used digital money, cash or debt and if debt open the modal to save the user requested.
+
+- After that give two options to generate receipt or to clear cart for the new customer
 
 8. Stock page
  show name, remaining quantity, selling price, low stock indicator (red)

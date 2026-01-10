@@ -74,7 +74,7 @@ export default function Settings() {
           <Text className="text-red-600 font-semibold">Delete All Data</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity className="bg-white p-4 rounded-lg">
+        <TouchableOpacity className="bg-white p-4 rounded-lg mb-10">
           <Text className="text-gray-800">Export Data</Text>
         </TouchableOpacity>
       </View>

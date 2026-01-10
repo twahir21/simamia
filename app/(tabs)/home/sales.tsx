@@ -2,11 +2,10 @@ import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { View, Text } from "react-native";
-import ScanScreen from "./components/ai";
+import ScanScreen from "./components/scan";
 
 const Tab = createMaterialTopTabNavigator();
 
-// function ScanScreen() { return <View><Text>Scan</Text></View>; }
 function SmartSearchScreen() { return <View><Text>Smart Search</Text></View>; }
 function GridScreen() { return <View><Text>Grid</Text></View>; }
 function QuickSaleScreen() { return <View><Text>Quick Sale</Text></View>; }

@@ -1,88 +1,236 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Audio } from "expo-av";
-import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { useAudioPlayer } from "expo-audio";
+import { useState, useRef } from "react";
+import { Text, View, TouchableOpacity, Animated } from "react-native";
+import * as Haptics from 'expo-haptics';
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [scanResult, setScanResult] = useState<null | "success" | "error">(null);
+  const [flashColor, setFlashColor] = useState("rgba(0, 255, 0, 0.3)"); // default green
 
-  // Load beep sound once
-  useEffect(() => {
-    (async () => {
-      const { sound } = await Audio.Sound.createAsync(
-        require("../../../../assets/sounds/beep.wav"), // add your beep file
-        { volume: 1 }
-      );
-      soundRef.current = sound;
-    })();
 
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
 
-  const handleScan = async ({ data }: { data: string }) => {
-    if (scanned) return;
+  console.log("initial: ", scanSuccess)
 
-    setScanned(true);
-
-    // Feedback
-    await soundRef.current?.replayAsync();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    // Business logic
-    console.log("QR DATA:", data);
-  };
+  
+  // Animation value for the green flash
+  const flashAnim = useRef(new Animated.Value(0)).current;
+  
+  // Preload sounds
+  const errorBeep = useAudioPlayer(require("../../../../assets/sounds/error.wav"));
+  const successBeep = useAudioPlayer(require("../../../../assets/sounds/beep.wav")); // Add success sound
 
   if (!permission) {
-    return <View className="flex-1 bg-black" />;
+    return <View />;
   }
 
   if (!permission.granted) {
     return (
-      <View className="flex-1 bg-black items-center justify-center px-6">
-        <Text className="text-white text-center mb-4">
-          Camera permission is required to scan QR codes
+      <View className="flex-1 bg-white items-center justify-center px-6">
+        <View className="mb-8">
+          <View className="bg-sky-500 p-6 rounded-full">
+            <Text className="text-4xl">📷</Text>
+          </View>
+        </View>
+        
+        <Text className="text-2xl font-bold text-center mb-3">
+          Camera Access Required
         </Text>
-
+        
+        <Text className="text-center text-base leading-6 mb-8 max-w-sm">
+          To scan Bar codes and capture numbers, we need access to your camera.
+        </Text>
+        
         <TouchableOpacity
           onPress={requestPermission}
-          className="bg-blue-600 px-4 py-2 rounded-lg"
+          activeOpacity={0.8}
+          className="bg-sky-500 px-8 py-4 rounded-xl w-full max-w-xs items-center shadow-lg shadow-blue-500/20"
         >
-          <Text className="text-white font-semibold">Grant Permission</Text>
+          <Text className="text-white font-semibold text-lg">Allow Camera Access</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
+  // Function to trigger green flash animation
+  const triggerSuccessFlash = () => {
+    // Reset animation value
+    flashAnim.setValue(0);
+    setFlashColor("rgba(0, 255, 0, 0.3)"); // green
+    
+    // Animate the flash
+    Animated.sequence([
+      Animated.timing(flashAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.delay(100),
+      Animated.timing(flashAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    setScanSuccess(true);
+  };
+
+
+  const triggerErrorFlash = () => {
+    // Reset animation value
+    flashAnim.setValue(0);
+    setFlashColor("rgba(255, 0, 0, 0.3)"); // red
+    
+    // Animate the flash
+    Animated.sequence([
+      Animated.timing(flashAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.delay(100),
+      Animated.timing(flashAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    setScanSuccess(false);
+  };
+
+
+  const handleBarcodeScanned = ({ data }: { data: string }) => {
+    console.log("inside handlebarcodescanned", scanSuccess)
+    if (scanned) return;
+    setScanned(true);
+
+    // TODO: Replace this with your actual product lookup logic
+    const isProductFound = checkIfProductExists(data); // Your function here
+
+    if (isProductFound) {
+      // SUCCESS: Product found
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Play success sound
+      if (successBeep) {
+        successBeep.seekTo(0);
+        successBeep.play();
+      }
+      
+      // Trigger green flash
+      setScanResult("success")
+      triggerSuccessFlash();
+      
+      // TODO: Add product to cart with quantity = 1
+      console.log("✅ Product found:", data);
+      // addToCart(data, 1);
+      
+      // Auto-reset for continuous scanning
+      setTimeout(() => setScanSuccess(false), 500);
+      setTimeout(() => setScanned(false), 1000);
+      setTimeout(() => setScanResult(null), 1000)
+    } else {
+      // ERROR: Product not found
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      setScanResult("error");
+      
+      // Play error sound
+      if (errorBeep) {
+        errorBeep.seekTo(0);
+        errorBeep.play();
+      }
+      
+      // Optional: Red flash for error
+      triggerErrorFlash();
+      
+      console.log("❌ Product not found:", data);
+      // Show error message
+      // alert("Product not found");
+      // setTimeout(() => setScanResult(null), 1000)
+      
+    }
+  };
+
+  // Dummy function - replace with your actual logic
+  const checkIfProductExists = (barcode: string): boolean => {
+    // This should check your product database
+    // For now, return true for demo purposes
+    console.log("barcode length: ", barcode.length)
+    return barcode.length > 5; 
+    // return false;
+  };
+
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1">
       <CameraView
-        className="flex-1"
+        style={{ flex: 1 }}
         facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-        onBarcodeScanned={handleScan}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr", "ean13", "ean8", "code128", "upc_a", "upc_e"],
+        }}
+        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
       />
 
-      {/* Overlay */}
-      <View className="absolute inset-0 items-center justify-center">
-        <View className="w-64 h-64 border-2 border-white rounded-xl" />
-        <Text className="text-white mt-4 opacity-80">
-          Align QR code inside the box
-        </Text>
-      </View>
+      {/* Green Flash Overlay */}
+      <Animated.View
+        className="absolute inset-0"
+        style={{
+          backgroundColor: flashColor,
+          opacity: flashAnim,
+          pointerEvents: 'none',
+        }}
+      />
 
-      {scanned && (
-        <TouchableOpacity
-          onPress={() => setScanned(false)}
-          className="absolute bottom-10 self-center bg-white px-6 py-3 rounded-full"
-        >
-          <Text className="text-black font-semibold">Scan Again</Text>
-        </TouchableOpacity>
-      )}
+      {/* Scan box overlay */}
+      <View className="absolute inset-0 items-center justify-center">
+        {/* Clear scan window */}
+        <View className="w-64 h-64">
+          {/* Animated border on success */}
+          <Animated.View
+            className="absolute inset-0"
+            style={{
+              borderWidth: scanSuccess ? 4 : 0,
+              borderColor: '#4ade80',
+              borderRadius: 12,
+              opacity: scanSuccess ? 0.8 : 0,
+            }}
+          />
+          
+          {/* Corners */}
+          <View className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-xl" />
+          <View className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-xl" />
+          <View className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-xl" />
+          <View className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-xl" />
+        </View>
+        
+        <Text className="text-white mt-10 opacity-70 text-2xl font-bold">Align barcode in box</Text>
+
+        {/* Success Feedback Message */}
+        {scanResult === "success" && (
+          <View className="mt-4 px-4 py-2 bg-green-500/90 rounded-lg">
+            <Text className="text-white font-semibold">✓ Added to cart</Text>
+          </View>
+        )}
+
+        {/* Error Feedback Message */}
+        {scanResult === "error" && (
+          <View className="mt-4 items-center">
+            <View className="px-4 py-2 bg-red-500/90 rounded-lg mb-3">
+              <Text className="text-white font-semibold">Product not found</Text>
+            </View>
+            <TouchableOpacity
+              className="px-4 py-2 bg-blue-500 rounded"
+              onPress={() => setScanned(false)}
+            >
+              <Text className="text-white">Scan Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
