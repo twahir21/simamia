@@ -10,11 +10,6 @@ export default function ScanScreen() {
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanResult, setScanResult] = useState<null | "success" | "error">(null);
   const [flashColor, setFlashColor] = useState("rgba(0, 255, 0, 0.3)"); // default green
-
-
-
-  console.log("initial: ", scanSuccess)
-
   
   // Animation value for the green flash
   const flashAnim = useRef(new Animated.Value(0)).current;
@@ -103,7 +98,6 @@ export default function ScanScreen() {
 
 
   const handleBarcodeScanned = ({ data }: { data: string }) => {
-    console.log("inside handlebarcodescanned", scanSuccess)
     if (scanned) return;
     setScanned(true);
 
@@ -159,7 +153,6 @@ export default function ScanScreen() {
   const checkIfProductExists = (barcode: string): boolean => {
     // This should check your product database
     // For now, return true for demo purposes
-    console.log("barcode length: ", barcode.length)
     return barcode.length > 5; 
     // return false;
   };
