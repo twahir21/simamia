@@ -248,7 +248,7 @@ const Orders = () => {
         <View className="flex-row items-center bg-gray-100 border border-gray-400 rounded-xl px-4 mb-3">
           <Ionicons name="search-sharp" size={20} color="#9CA3AF" />
           <TextInput
-            className="flex-1 ml-3 text-gray-800"
+            className="flex-1 ml-2 text-gray-800 py-2"
             placeholder="Search by phone or order code..."
             value={searchQuery}
             onChangeText={setSearchQuery}

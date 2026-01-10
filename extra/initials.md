@@ -58,7 +58,9 @@ select category -> touch product card move to cart
 and if prices changes frequently.
 
 4. ✍ Quick Sale
-cashier enter price manually e.g. services, repairs. Just make price editable / enter manually
+cashier enter price manually e.g. services, repairs. Just make price editable / enter manually.
+Big number pad (price), optional quantity and optional note.
+(one tap -> enter price -> Sale)
 **rank** Primary UX
 
 
@@ -68,6 +70,7 @@ cashier enter price manually e.g. services, repairs. Just make price editable / 
 
 
 7. Favourite / repeated 
+user pinned, most frequent (most sold - auto ranked), big touch (Grid), recent sold (optional toggle)
 **rank** Primary UX
 
 Cashier sets top 10 products as shortcuts on home screen. (use grid/product cards for visual)

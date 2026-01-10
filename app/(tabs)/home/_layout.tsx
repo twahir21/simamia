@@ -11,6 +11,7 @@ export default function HomeLayout() {
         <Stack.Screen
           name="index"
           options={{
+            title: "Simamia",
             headerStyle: {
               // backgroundColor: "#e0f2fe", 
             },

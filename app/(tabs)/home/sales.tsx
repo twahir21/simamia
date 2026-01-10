@@ -20,7 +20,7 @@ const tabComponents: Record<string, React.ComponentType<any>> = {
 };
 
 export default function Sales() {
-  const [selectedTabs, setSelectedTabs] = useState<string[]>(["Scan", "Smart Search", "Quick Sale"]);
+  const [selectedTabs, setSelectedTabs] = useState<string[]>(["Scan", "Smart Search", "Favorites"]);
   const [initialTab, setInitialTab] = useState("Scan");
 
   useEffect(() => {
