@@ -57,6 +57,21 @@ Mambo yote dynamic ni huku , ku lock app etc. (lock app will never hides/block v
 if scanned again just add quantity
 
 **smart search**
+- no title (only search bar and recent searches at the start)
+- About 15 unscrollable recent searches (give recent icon beside it) and its header (Recent added products)
+- Feedback as added to cart
+- auto suggests list (scrollable) sits ontop of recent searches and it has price at the right
+- auto focus on search
+- in search bar we have a clear button (icon) on right
+- rank by the most similar product
+- add haptic feedback
+- highlight (Bold) matched words e.g. “Coca Cola 500ml” , “Azam Juice Mango
+- on enter auto add to cart (by picking the first result - most accurate)
+- clear the search after adding to cart 
+- prevent adding to cart on rapid tapping (avoid duplicates) 
+    by setTimeout slightly the tap/enter 
+- Avoid fuzzy match like fuse.js for now (MVP)
+- add typo tolerance. 
 
 **Every tab**
 - Remember last used tab
@@ -108,17 +123,8 @@ To lock the app:
 2. App opens < 2s
 3. App saves time daily (for manual work, e.g. manual sales, stock etc )
 
-## long color palette
-Use:
+## notes
+in registering products say if is breakable or not breakable (kwa watu wa jumla na rejareja)
+(so that voice input will not slice unbreakable products ) fikiria vizuri zaidi.
 
-Background: Off-white / light gray
-#F7F7F7
-
-Primary action (Sale button): Deep green
-#0F766E (trust + money)
-
-Danger / Low stock: Muted red
-#DC2626
-
-Text: Dark charcoal
-#111827
+In settings under tab customization user choose btn scan or voice only.

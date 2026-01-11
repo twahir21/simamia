@@ -157,73 +157,71 @@ export default function ScanScreen() {
     // return false;
   };
 
+
   return (
     <View className="flex-1">
-      <CameraView
-        style={{ flex: 1 }}
-        facing="back"
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr", "ean13", "ean8", "code128", "upc_a", "upc_e"],
-        }}
-        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-      />
+        <CameraView
+          style={{ flex: 1 }}
+          facing="back"
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr", "ean13", "ean8", "code128", "upc_a", "upc_e"],
+          }}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+        />
 
-      {/* Green Flash Overlay */}
-      <Animated.View
-        className="absolute inset-0"
-        style={{
-          backgroundColor: flashColor,
-          opacity: flashAnim,
-          pointerEvents: 'none',
-        }}
-      />
+        {/* Green Flash Overlay */}
+        <Animated.View
+          className="absolute inset-0"
+          style={{
+            backgroundColor: flashColor,
+            opacity: flashAnim,
+            pointerEvents: 'none',
+          }}
+        />
 
-      {/* Scan box overlay */}
-      <View className="absolute inset-0 items-center justify-center">
-        {/* Clear scan window */}
-        <View className="w-64 h-64">
-          {/* Animated border on success */}
-          <Animated.View
-            className="absolute inset-0"
-            style={{
-              borderWidth: scanSuccess ? 4 : 0,
-              borderColor: '#4ade80',
-              borderRadius: 12,
-              opacity: scanSuccess ? 0.8 : 0,
-            }}
-          />
+        {/* Scan box overlay */}
+        <View className="absolute inset-0 items-center justify-center">
+          {/* Clear scan window */}
+          <View className="w-60 h-60">
+            {/* Animated border on success */}
+            <Animated.View
+              className="absolute inset-0"
+              style={{
+                borderWidth: scanSuccess ? 4 : 0,
+                borderColor: '#4ade80',
+                borderRadius: 12,
+                opacity: scanSuccess ? 0.8 : 0,
+              }}
+            />
+            
+            {/* Corners */}
+            <View className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-xl" />
+            <View className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-xl" />
+            <View className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-xl" />
+            <View className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-xl" />
+          </View>
           
-          {/* Corners */}
-          <View className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-xl" />
-          <View className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-xl" />
-          <View className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-xl" />
-          <View className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-xl" />
-        </View>
-        
-        <Text className="text-white mt-10 opacity-70 text-2xl font-bold">Align barcode in box</Text>
+          <Text className="text-white mt-3 opacity-70 text-xl font-bold">Align barcode in box</Text>
 
-        {/* Success Feedback Message */}
-        {scanResult === "success" && (
-          <View className="mt-4 px-4 py-2 bg-green-500/90 rounded-lg">
-            <Text className="text-white font-semibold">✓ Added to cart</Text>
-          </View>
-        )}
-
-        {/* Error Feedback Message */}
-        {scanResult === "error" && (
-          <View className="mt-4 items-center">
-            <View className="px-4 py-2 bg-red-500/90 rounded-lg mb-3">
-              <Text className="text-white font-semibold">Product not found</Text>
+          {/* Success Feedback Message */}
+          {scanResult === "success" && (
+            <View className="mt-2 px-4 py-2 bg-green-500/90 rounded-lg">
+              <Text className="text-white font-semibold">✓ Added to cart</Text>
             </View>
-            <TouchableOpacity
-              className="px-4 py-2 bg-blue-500 rounded"
-              onPress={() => setScanned(false)}
-            >
-              <Text className="text-white">Scan Again</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+          )}
+
+          {/* Error Feedback Message */}
+          {scanResult === "error" && (
+            <View className="mt-2 items-center">
+              <TouchableOpacity
+                className="px-4 py-2 bg-red-500/90 rounded"
+                onPress={() => setScanned(false)}
+              >
+                <Text className="text-white font-semibold">Product not found, scan Again</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
     </View>
-  );
+  )
 }

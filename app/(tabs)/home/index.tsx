@@ -12,8 +12,8 @@ export default function App() {
 //   }, []);
 
   return <>
-  <ScrollView>
-        <View className="flex-1 bg-white px-4 pt-4">
+  <ScrollView className="bg-white">
+      <View className="flex-1 px-4 pt-4">
 
       {/* Top Section */}
       <View>

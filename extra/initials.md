@@ -80,9 +80,6 @@ Tap → auto‑add to cart.
 **Best for**: Shops with repeat daily items (bread, milk, airtime).
 Why easier: One‑tap speed, no scanning or typing.
 
-8. Object detection via camera
-**best for** un-labeled products
-bad under dim light, quantity distinguish e.g. 2kg rice and 1kg rice and feels heavy and needs training.
 
 5. customer based / saved orders
 **rank** later/advanced UX
