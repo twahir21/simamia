@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Entypo, FontAwesome, Fontisto, Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
 import { orders } from '@/const/orders';
+import { BottomActions } from './home/components/ui/Actions';
 // types/order.ts
 export type DeliveryStatus = 'pending' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
@@ -392,6 +393,7 @@ const Orders = () => {
           ))
         )}
       </ScrollView>
+      <BottomActions />
 
       {/* Filter Modal */}
       <Modal

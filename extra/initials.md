@@ -70,7 +70,16 @@ Big number pad (price), optional quantity and optional note.
 
 
 7. Favourite / repeated 
-user pinned, most frequent (most sold - auto ranked), big touch (Grid), recent sold (optional toggle)
+
+Default open: ⭐ Pinned
+
+If pinned is empty → auto-open 🔥 Popular
+
+Do NOT auto-switch tabs afterward
+
+Long-press item → pin/unpin
+
+Recently sold updates silently
 **rank** Primary UX
 
 Cashier sets top 10 products as shortcuts on home screen. (use grid/product cards for visual)

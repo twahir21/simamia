@@ -1,26 +1,17 @@
 import { getLastTab, saveLastTab } from "@/store/tabMemory";
 import { useEffect, useState } from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import { Text, View } from "react-native";
 import ScanScreen from "./scan";
 import SmartSearch from "./search";
+import QuickSaleScreen from "./quick";
+import FavoritesScreen from "./favouriteLayout";
 
 const Tab = createMaterialTopTabNavigator();
 
-function GridScreen() { 
-  return <View><Text>Grid</Text></View>; 
-} 
-function QuickSaleScreen() { 
-  return <View><Text>Quick Sale</Text></View>; 
-} 
-function FavoritesScreen() { 
-  return <View><Text>Favorites</Text></View>; 
-} 
 
 const tabComponents: Record<string, React.ComponentType<any>> = { 
   Scan: ScanScreen, 
   Search: SmartSearch, 
-  Grid: GridScreen, 
   Quick: QuickSaleScreen, 
   Favorites: FavoritesScreen, 
 };

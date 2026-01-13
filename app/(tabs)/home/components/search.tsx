@@ -248,7 +248,7 @@ const SmartSearch: React.FC = () => {
     setIsAdding(true);
     
     // Haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
     // Update recent searches
     setRecentSearches(prev => {
@@ -324,21 +324,37 @@ const SmartSearch: React.FC = () => {
   };
   
   // Render recent search item
-  const renderRecentItem = (item: Product, index: number) => (
-    <TouchableOpacity
-      key={item.id}
-      onPress={() => {
-        setSearchQuery(item.name);
-        const results = searchProducts(item.name);
-        setSuggestions(results);
-        setShowSuggestions(true);
-      }}
-      className="bg-sky-50 border border-gray-300 rounded-full px-4 py-2 mr-3 mb-2 flex-row items-center active:bg-gray-200"
-    >
-      <AntDesign name="clock-circle" size={14} color="#6b7280" className="mr-2" />
-      <Text className="text-gray-700">{item.name}</Text>
-    </TouchableOpacity>
-  );
+const renderRecentItem = (item: Product, index: number) => (
+  <TouchableOpacity
+    key={item.id}
+    onPress={() => {
+      setSearchQuery(item.name);
+      const results = searchProducts(item.name);
+      setSuggestions(results);
+      setShowSuggestions(true);
+    }}
+    className="w-1/2 pr-2 mb-2"
+    activeOpacity={0.7}
+  >
+    <View className="bg-sky-50 border border-gray-300 rounded-full px-4 py-2 flex-row items-center">
+      <AntDesign
+        name="clock-circle"
+        size={14}
+        color="#6b7280"
+        style={{ marginRight: 6 }}
+      />
+
+      <Text
+        className="text-gray-700 flex-1"
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        {item.name}
+      </Text>
+    </View>
+  </TouchableOpacity>
+);
+
 
   return (
     <View className="flex-1 bg-white p-4">
@@ -348,8 +364,7 @@ const SmartSearch: React.FC = () => {
           style={[styles.feedbackToast, { opacity: fadeAnim }]}
           className="absolute top-4 left-4 right-4 bg-green-50 border border-green-200 rounded-xl p-4 flex-row items-center z-50"
         >
-          {/* <CheckCircle size={24} color="#10b981" /> */}
-          <Feather name="search" size={24} color="black" />
+          <Feather name="check-circle" size={24} color="#10b981" />
           <View className="ml-3 flex-1">
             <Text className="text-green-800 font-semibold">Added to cart!</Text>
             <Text className="text-green-700 text-sm">{feedbackProduct.name}</Text>
