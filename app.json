@@ -81,7 +81,9 @@
             "useSQLCipher": false
           },
           "ios": {
-            "customBuildFlags": ["-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"]
+            "customBuildFlags": [
+              "-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"
+            ]
           }
         }
       ]
@@ -93,7 +95,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e859c918-e03b-4176-a376-bc2eec97dd30"
+        "projectId": "0f9ae87c-894c-4ad4-a37d-ed5643357c71"
       },
       "expo-navigation-bar": {
         "backgroundColor": "#0f172a",
