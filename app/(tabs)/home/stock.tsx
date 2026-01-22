@@ -1,822 +1,601 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert } from 'react-native';
+import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Layers, Truck, Hash, Calendar, Target, X, Download } from 'lucide-react-native';
+import { BottomActions } from './components/ui/Actions';
+import { fetchAllStock, saveStock } from '@/db/stock.sqlite';
+import { FetchStock, StockInput } from '@/types/stock.types';
+import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 
-import Feather from '@expo/vector-icons/Feather';
 
-// types/stock.ts
-export interface StockItem {
-  id: string;
-  name: string;
-  category: string;
-  currentStock: number;
-  minimumStock: number;
-  unit: string;
-  price: number;
-  lastUpdated: string;
-  supplier: string;
-  reorderLevel: number; // When stock reaches this, suggest reorder
-  status: 'in-stock' | 'low-stock' | 'out-of-stock' | 'overstock';
-}
+export default function Stock() {
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [STOCKS, setStocks] = useState<FetchStock[]>([]);
+    const [refreshKey, setRefreshKey] = useState(0);
 
-export type StockCategory = 'all' | 'food' | 'drinks' | 'supplies' | 'others';
-export type StockSortOption = 'name-asc' | 'name-desc' | 'stock-low' | 'stock-high' | 'price-high' | 'price-low';
-// Hardcoded sample stock data
-const initialStockItems: StockItem[] = [
-  {
-    id: '1',
-    name: 'Premium Rice (25kg)',
-    category: 'food',
-    currentStock: 15,
-    minimumStock: 5,
-    unit: 'bags',
-    price: 45000,
-    lastUpdated: '2026-01-08',
-    supplier: 'Kilimo Fresh',
-    reorderLevel: 10,
-    status: 'in-stock'
-  },
-  {
-    id: '2',
-    name: 'Cooking Oil (5L)',
-    category: 'food',
-    currentStock: 3,
-    minimumStock: 10,
-    unit: 'jars',
-    price: 12500,
-    lastUpdated: '2026-01-07',
-    supplier: 'Best Oil Co.',
-    reorderLevel: 5,
-    status: 'low-stock'
-  },
-  {
-    id: '3',
-    name: 'Mineral Water (500ml)',
-    category: 'drinks',
-    currentStock: 0,
-    minimumStock: 20,
-    unit: 'bottles',
-    price: 150,
-    lastUpdated: '2026-01-08',
-    supplier: 'Aqua Pure',
-    reorderLevel: 15,
-    status: 'out-of-stock'
-  },
-  {
-    id: '4',
-    name: 'Sugar (1kg)',
-    category: 'food',
-    currentStock: 45,
-    minimumStock: 15,
-    unit: 'packets',
-    price: 2500,
-    lastUpdated: '2026-01-06',
-    supplier: 'Sweet Harvest',
-    reorderLevel: 20,
-    status: 'overstock'
-  },
-  {
-    id: '5',
-    name: 'Delivery Boxes',
-    category: 'supplies',
-    currentStock: 8,
-    minimumStock: 30,
-    unit: 'boxes',
-    price: 800,
-    lastUpdated: '2026-01-05',
-    supplier: 'Packaging Inc.',
-    reorderLevel: 20,
-    status: 'low-stock'
-  },
-  {
-    id: '6',
-    name: 'Tea Leaves (500g)',
-    category: 'drinks',
-    currentStock: 12,
-    minimumStock: 8,
-    unit: 'packets',
-    price: 3200,
-    lastUpdated: '2026-01-08',
-    supplier: 'Chai Masters',
-    reorderLevel: 10,
-    status: 'in-stock'
-  },
-  {
-    id: '7',
-    name: 'Spices Set',
-    category: 'food',
-    currentStock: 22,
-    minimumStock: 10,
-    unit: 'sets',
-    price: 4500,
-    lastUpdated: '2026-01-07',
-    supplier: 'Flavor King',
-    reorderLevel: 15,
-    status: 'in-stock'
-  },
-  {
-    id: '8',
-    name: 'Disposable Cups',
-    category: 'supplies',
-    currentStock: 5,
-    minimumStock: 25,
-    unit: 'packs',
-    price: 1200,
-    lastUpdated: '2026-01-08',
-    supplier: 'Eco Serve',
-    reorderLevel: 15,
-    status: 'low-stock'
-  }
-];
+    useEffect(() => {
+      const data = fetchAllStock();
+      setStocks(data);
+    }, [refreshKey]);
 
-const Stock = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<StockSortOption>('stock-low');
-  const [filterBy, setFilterBy] = useState<StockCategory>('all');
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [stockItems, setStockItems] = useState<StockItem[]>(initialStockItems);
-  const [expandedItem, setExpandedItem] = useState<string | null>(null);
-
-  // Calculate statistics
-  const statistics = useMemo(() => {
-    const totalItems = stockItems.length;
-    const lowStock = stockItems.filter(item => item.status === 'low-stock').length;
-    const outOfStock = stockItems.filter(item => item.status === 'out-of-stock').length;
-    const totalValue = stockItems.reduce((sum, item) => sum + (item.currentStock * item.price), 0);
-    const needsReorder = stockItems.filter(item => item.currentStock <= item.reorderLevel).length;
-
-    return { totalItems, lowStock, outOfStock, totalValue, needsReorder };
-  }, [stockItems]);
-
-  // Filter and sort logic
-  const filteredItems = useMemo(() => {
-    let result = stockItems.filter(item => {
-      // Search filter
-      const matchesSearch = 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.supplier.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      // Category filter
-      if (filterBy === 'all') return matchesSearch;
-      return matchesSearch && item.category === filterBy;
-    });
-
-    // Sorting
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case 'name-asc':
-          return a.name.localeCompare(b.name);
-        case 'name-desc':
-          return b.name.localeCompare(a.name);
-        case 'stock-low':
-          return (a.currentStock / a.minimumStock) - (b.currentStock / b.minimumStock);
-        case 'stock-high':
-          return (b.currentStock / b.minimumStock) - (a.currentStock / a.minimumStock);
-        case 'price-high':
-          return b.price - a.price;
-        case 'price-low':
-          return a.price - b.price;
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [stockItems, searchQuery, sortBy, filterBy]);
-
-  // Status badge component
-  const StockStatusBadge = ({ status }: { status: StockItem['status'] }) => {
-    const config = {
-      'in-stock': { bg: 'bg-green-100', text: 'text-green-800', icon: '✅', label: 'In Stock' },
-      'low-stock': { bg: 'bg-amber-100', text: 'text-amber-800', icon: '⚠️', label: 'Low Stock' },
-      'out-of-stock': { bg: 'bg-red-100', text: 'text-red-800', icon: '❌', label: 'Out of Stock' },
-      'overstock': { bg: 'bg-blue-100', text: 'text-blue-800', icon: '📦', label: 'Overstock' },
+    const refreshStocks = () => {
+      setRefreshKey(prev => prev + 1);
     };
-    const { bg, text, icon, label } = config[status];
-    return (
-      <View className={`px-3 py-1 rounded-full ${bg}`}>
-        <Text className={`text-sm font-semibold ${text}`}>{icon} {label}</Text>
-      </View>
-    );
-  };
 
-  // Stock level indicator
-  const StockLevelIndicator = ({ item }: { item: StockItem }) => {
-    const percentage = (item.currentStock / item.minimumStock) * 100;
+
+  const renderStockCard = ({ item }: { item: FetchStock }) => {
+    const isExpanded = expandedId === item.id;
     
-    let color = 'bg-green-500';
-    if (item.status === 'low-stock') color = 'bg-amber-500';
-    if (item.status === 'out-of-stock') color = 'bg-red-500';
-    if (item.status === 'overstock') color = 'bg-blue-500';
+    // Status colors
+    const statusColor = item.status === 'in-stock' ? 'text-emerald-600' : item.status === 'low-stock' ? 'text-amber-500' : 'text-red-500';
+    const statusBg = item.status === 'in-stock' ? 'bg-emerald-50' : item.status === 'low-stock' ? 'bg-amber-50' : 'bg-red-50';
 
     return (
-      <View className="mt-2">
-        <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <View 
-            className={`h-full ${color} rounded-full`}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
-          />
-        </View>
-        <View className="flex-row justify-between mt-1">
-          <Text className="text-xs text-gray-500">Current: {item.currentStock}{item.unit}</Text>
-          <Text className="text-xs text-gray-500">Min: {item.minimumStock}{item.unit}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  // Action functions
-  const updateStock = (itemId: string, newStock: number) => {
-    Alert.prompt(
-      'Update Stock',
-      'Enter new stock quantity:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Update',
-          onPress: (value: any) => {
-            if (value && !isNaN(parseInt(value))) {
-              setStockItems(prev =>
-                prev.map(item => {
-                  if (item.id === itemId) {
-                    const updatedStock = parseInt(value);
-                    let status: StockItem['status'] = 'in-stock';
-                    
-                    if (updatedStock === 0) status = 'out-of-stock';
-                    else if (updatedStock <= item.reorderLevel) status = 'low-stock';
-                    else if (updatedStock > item.minimumStock * 2) status = 'overstock';
-                    
-                    return {
-                      ...item,
-                      currentStock: updatedStock,
-                      status,
-                      lastUpdated: new Date().toISOString().split('T')[0]
-                    };
-                  }
-                  return item;
-                })
-              );
-            }
-          },
-        },
-      ],
-      'plain-text',
-      ''
-    );
-  };
-
-  const reorderItem = (item: StockItem) => {
-    Alert.alert(
-      'Reorder Item',
-      `Order ${item.name} from ${item.supplier}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Order Now',
-          onPress: () => {
-            // In real app, this would trigger an order process
-            Alert.alert('Success', `Order placed for ${item.name}`);
-          },
-        },
-      ]
-    );
-  };
-
-  const deleteItem = (itemId: string) => {
-    Alert.alert(
-      'Delete Item',
-      'Are you sure you want to remove this item from inventory?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setStockItems(prev => prev.filter(item => item.id !== itemId));
-          },
-        },
-      ]
-    );
-  };
-
-  // Quick stats cards
-  const StatCard = ({ 
-    title, 
-    value, 
-    color, 
-    subtitle 
-  }: { 
-    title: string; 
-    value: string | number; 
-    color: string;
-    subtitle?: string;
-  }) => (
-    <View className={`${color} rounded-2xl p-4 flex-1`}>
-      <View className="flex-row items-center justify-between">
-        {/* <Icon size={20} color="#fff" /> */}
-        <Feather size={24} name="x-circle" color="#666" />
-        {subtitle && <Text className="text-white text-xs opacity-90">{subtitle}</Text>}
-      </View>
-      <Text className="text-white text-2xl font-bold mt-2">{value}</Text>
-      <Text className="text-white text-sm opacity-90">{title}</Text>
-    </View>
-  );
-
-  // Add new item modal
-  const AddItemModal = () => {
-    const [newItem, setNewItem] = useState({
-      name: '',
-      category: 'food' as StockItem['category'],
-      currentStock: 0,
-      minimumStock: 10,
-      unit: 'units',
-      price: 0,
-      supplier: '',
-      reorderLevel: 5
-    });
-
-    const handleAdd = () => {
-      if (!newItem.name || !newItem.supplier) {
-        Alert.alert('Error', 'Please fill in required fields');
-        return;
-      }
-
-      const newStockItem: StockItem = {
-        id: Date.now().toString(),
-        ...newItem,
-        lastUpdated: new Date().toISOString().split('T')[0],
-        status: newItem.currentStock === 0 ? 'out-of-stock' : 
-                newItem.currentStock <= newItem.reorderLevel ? 'low-stock' : 
-                newItem.currentStock > newItem.minimumStock * 2 ? 'overstock' : 'in-stock'
-      };
-
-      setStockItems(prev => [...prev, newStockItem]);
-      setShowAddModal(false);
-      setNewItem({
-        name: '',
-        category: 'food',
-        currentStock: 0,
-        minimumStock: 10,
-        unit: 'units',
-        price: 0,
-        supplier: '',
-        reorderLevel: 5
-      });
-    };
-
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showAddModal}
-        onRequestClose={() => setShowAddModal(false)}
-      >
-        <SafeAreaView className="flex-1 bg-black/50 justify-end">
-          <ScrollView className="bg-white rounded-t-3xl max-h-4/5">
-            <View className="p-6">
-              <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-2xl font-bold">Add New Item</Text>
-                <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                  <Feather size={24} name="x-circle" color="#666" />
-                </TouchableOpacity>
-              </View>
-
-              <View className="space-y-4">
-                <View>
-                  <Text className="text-gray-700 font-medium mb-2">Item Name *</Text>
-                  <TextInput
-                    className="bg-gray-100 rounded-xl px-4 py-3"
-                    placeholder="e.g., Rice (25kg)"
-                    value={newItem.name}
-                    onChangeText={text => setNewItem({...newItem, name: text})}
-                  />
-                </View>
-
-                <View className="flex-row space-x-3">
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-medium mb-2">Category</Text>
-                    <View className="flex-row flex-wrap gap-2">
-                      {(['food', 'drinks', 'supplies', 'others'] as const).map(cat => (
-                        <TouchableOpacity
-                          key={cat}
-                          className={`px-3 py-2 rounded-lg ${
-                            newItem.category === cat ? 'bg-blue-500' : 'bg-gray-100'
-                          }`}
-                          onPress={() => setNewItem({...newItem, category: cat})}
-                        >
-                          <Text className={newItem.category === cat ? 'text-white' : 'text-gray-700'}>
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                </View>
-
-                <View className="flex-row space-x-3">
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-medium mb-2">Current Stock</Text>
-                    <TextInput
-                      className="bg-gray-100 rounded-xl px-4 py-3"
-                      placeholder="0"
-                      keyboardType="numeric"
-                      value={newItem.currentStock.toString()}
-                      onChangeText={text => setNewItem({...newItem, currentStock: parseInt(text) || 0})}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-medium mb-2">Unit</Text>
-                    <TextInput
-                      className="bg-gray-100 rounded-xl px-4 py-3"
-                      placeholder="bags, kg, etc"
-                      value={newItem.unit}
-                      onChangeText={text => setNewItem({...newItem, unit: text})}
-                    />
-                  </View>
-                </View>
-
-                <View className="flex-row space-x-3">
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-medium mb-2">Price (each)</Text>
-                    <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
-                      <Feather size={24} name="x-circle" color="#666" />
-                      <TextInput
-                        className="flex-1 ml-2"
-                        placeholder="0"
-                        keyboardType="numeric"
-                        value={newItem.price.toString()}
-                        onChangeText={text => setNewItem({...newItem, price: parseInt(text) || 0})}
-                      />
-                    </View>
-                  </View>
-                </View>
-
-                <View>
-                  <Text className="text-gray-700 font-medium mb-2">Supplier *</Text>
-                  <TextInput
-                    className="bg-gray-100 rounded-xl px-4 py-3"
-                    placeholder="Supplier name"
-                    value={newItem.supplier}
-                    onChangeText={text => setNewItem({...newItem, supplier: text})}
-                  />
-                </View>
-
-                <View className="flex-row space-x-3">
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-medium mb-2">Min. Stock</Text>
-                    <TextInput
-                      className="bg-gray-100 rounded-xl px-4 py-3"
-                      placeholder="10"
-                      keyboardType="numeric"
-                      value={newItem.minimumStock.toString()}
-                      onChangeText={text => setNewItem({...newItem, minimumStock: parseInt(text) || 10})}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-medium mb-2">Reorder At</Text>
-                    <TextInput
-                      className="bg-gray-100 rounded-xl px-4 py-3"
-                      placeholder="5"
-                      keyboardType="numeric"
-                      value={newItem.reorderLevel.toString()}
-                      onChangeText={text => setNewItem({...newItem, reorderLevel: parseInt(text) || 5})}
-                    />
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  className="bg-green-500 p-4 rounded-xl mt-6"
-                  onPress={handleAdd}
-                >
-                  <Text className="text-white text-center font-semibold text-lg">➕ Add Item</Text>
-                </TouchableOpacity>
-              </View>
+      <View className="bg-white mx-4 mb-3 rounded-2xl border border-slate-400 shadow-sm overflow-hidden">
+        <View className="p-4">
+          {/* Header Area (Always Visible) */}
+          <View className="flex-row justify-between items-start">
+            <View className="flex-1 pr-2">
+              <Text className="text-lg font-bold text-slate-800 uppercase tracking-tight">{item.productName}</Text>
+              <Text className="text-xs text-slate-400 font-mono mt-1">{item.qrCode}</Text>
             </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+            <View className={`${statusBg} px-2 py-1 rounded-md`}>
+              <Text className={`${statusColor} text-[10px] font-bold uppercase`}>{item.status.replace('-', ' ')}</Text>
+            </View>
+          </View>
+
+          {/* Stats Row */}
+          <View className="flex-row justify-between mt-4 items-center">
+            <View>
+              <Text className="text-[10px] text-slate-400 uppercase font-bold">Quantity</Text>
+              <Text className="text-xl font-black text-slate-900">{item.quantity}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-[10px] text-slate-400 uppercase font-bold">Price</Text>
+              <Text className="text-xl font-black text-slate-900">{item.price.toLocaleString()} TZS</Text>
+            </View>
+          </View>
+
+          <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-slate-50">
+             <Text className="text-[10px] text-slate-400 italic">Updated: {item.lastUpdate}</Text>
+             <TouchableOpacity onPress={() => setExpandedId(isExpanded ? null : item.id)}>
+                <Text className="text-blue-600 font-bold text-xs">{isExpanded ? "Show Less" : "Show More"}</Text>
+             </TouchableOpacity>
+          </View>
+
+          {/* Expandable Section */}
+          {isExpanded && (
+            <View className="mt-4 pt-4 border-t border-slate-400 space-y-3">
+              <View className="flex-row flex-wrap gap-x-4 gap-y-4">
+                <View className="flex-row items-center">
+                  <MapPin size={14} color="#64748b" />
+                  <Text className="text-xs text-slate-600">Location: {item.location || 'N/A'}</Text>
+                </View>
+                <View className="flex-row items-center my-2">
+                  <Tag size={14} color="#64748b" />
+                  <Text className="text-xs text-slate-600 ml-1">Batch: {item.batchNumber || 'N/A'}</Text>
+                </View>
+              </View>
+
+              <View className="flex-row my-2">
+                <Text className="text-xs font-bold text-slate-700">Expiry Date:</Text>
+                <Text className="text-xs text-red-500 pl-1">{item.expiryDate || 'No Expiry'}</Text>
+              </View>
+
+              {item.suppliers && (
+                <View>
+                  <Text className="text-xs font-bold text-slate-700 mb-1">Suppliers:</Text>
+                  {item.suppliers.split(",").map((s, idx) => (
+                    <Text key={idx} className="text-xs text-slate-500 ml-2 pb-1">• {s}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View className="flex-row gap-3 mt-4 mb-2">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              className="flex-1 bg-sky-600 flex-row items-center justify-center py-3 rounded-xl"
+            >
+              <Edit3 size={16} color="white" />
+              <Text className="text-white font-bold ml-2 text-xs">
+                Edit Stock
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              className="flex-1 bg-blue-50 border border-blue-600 flex-row items-center justify-center py-3 rounded-xl"
+            >
+              <PlusCircle size={16} color="#2563eb" />
+              <Text className="text-blue-600 font-bold ml-2 text-xs">
+                Add to Order
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              className="bg-red-50 border border-red-500 p-3 rounded-xl"
+            >
+              <Trash2 size={20} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     );
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-200">
-        <View className="flex-row justify-between items-center mb-4">
-          <View>
-            <Text className="text-3xl font-bold text-gray-900">Stock</Text>
-            <Text className="text-gray-600">Inventory Management</Text>
-          </View>
-          <TouchableOpacity 
-            className="bg-blue-500 p-3 rounded-xl"
-            onPress={() => setShowAddModal(true)}
-          >
-            <Feather size={24} name="x-circle" color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-3">
-          <Feather size={24} name="x-circle" color="#666" />
-          <TextInput
-            className="flex-1 ml-3 text-gray-800"
-            placeholder="Search items or suppliers..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+    <View className="flex-1 bg-slate-50 pt-4 relative">
+      {/* Search Header */}
+      <View className="px-4 mb-4">
+        <View className="bg-white flex-row items-center px-4 py-1 rounded-2xl border border-slate-200 shadow-sm">
+          <Search size={20} color="#94a3b8" />
+          <TextInput 
+            placeholder="Search name, code, or category..." 
+            className="flex-1 ml-3 text-slate-700 font-medium"
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Feather size={24} name="x-circle" color="#666" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Stats Overview */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-          <View className="flex-row space-x-3">
-            <StatCard
-              title="Total Items"
-              value={statistics.totalItems}
-              color="bg-blue-500"
-            />
-            <StatCard
-              title="Low Stock"
-              value={statistics.lowStock}
-              color="bg-amber-500"
-              subtitle="Needs attention"
-            />
-            <StatCard
-              title="Out of Stock"
-              value={statistics.outOfStock}
-              color="bg-red-500"
-              subtitle="Urgent"
-            />
-            <StatCard
-              title="Total Value"
-              value={`$${(statistics.totalValue / 1000).toFixed(1)}K`}
-              color="bg-green-500"
-            />
-          </View>
-        </ScrollView>
-
-        {/* Filter & Sort Row */}
-        <View className="flex-row space-x-3">
-          <TouchableOpacity
-            className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 flex-row items-center justify-between"
-            onPress={() => setShowFilterModal(true)}
-          >
-            <View className="flex-row items-center">
-              <Feather size={24} name="x-circle" color="#666" />
-              <Text className="ml-2 text-gray-700">Filter</Text>
-            </View>
-            <Text className="text-gray-600 font-medium">
-              {filterBy === 'all' ? 'All Categories' : 
-               filterBy.charAt(0).toUpperCase() + filterBy.slice(1)}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 flex-row items-center justify-between"
-            onPress={() => {
-              const sortOptions: StockSortOption[] = ['stock-low', 'stock-high', 'name-asc', 'name-desc', 'price-high', 'price-low'];
-              const currentIndex = sortOptions.indexOf(sortBy);
-              const nextIndex = (currentIndex + 1) % sortOptions.length;
-              setSortBy(sortOptions[nextIndex]);
-            }}
-          >
-            <Text className="text-gray-700">Sort</Text>
-            <View className="flex-row items-center">
-              <Text className="text-gray-600 font-medium mr-2">
-                {sortBy === 'stock-low' ? 'Stock (Low)' :
-                 sortBy === 'stock-high' ? 'Stock (High)' :
-                 sortBy === 'name-asc' ? 'Name (A-Z)' :
-                 sortBy === 'name-desc' ? 'Name (Z-A)' :
-                 sortBy === 'price-high' ? 'Price (High)' : 'Price (Low)'}
-              </Text>
-              <Feather size={24} name="x-circle" color="#666" />
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Stock Items List */}
-      <ScrollView className="flex-1 px-4 py-6">
-        {filteredItems.length === 0 ? (
-          <View className="items-center justify-center py-20">
-            <Feather size={24} name="x-circle" color="#666" />
-            <Text className="text-xl font-semibold text-gray-500 mt-4">No items found</Text>
-            <TouchableOpacity 
-              className="mt-4 bg-blue-500 px-6 py-3 rounded-xl"
-              onPress={() => setShowAddModal(true)}
-            >
-              <Text className="text-white font-semibold">➕ Add Your First Item</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          filteredItems.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-4 overflow-hidden"
-              activeOpacity={0.95}
-              onPress={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
-            >
-              {/* Item Header */}
-              <View className="p-5">
-                <View className="flex-row justify-between items-start mb-3">
-                  <View className="flex-1">
-                    <View className="flex-row items-center">
-                      <Feather size={24} name="x-circle" color="#666" />
-                      <Text className="ml-2 text-lg font-semibold text-gray-900 flex-1">
-                        {item.name}
-                      </Text>
-                    </View>
-                    <Text className="text-gray-500 mt-1">{item.supplier}</Text>
-                  </View>
-                  <StockStatusBadge status={item.status} />
-                </View>
+      {/* Horizontal Analytics Card */}
+      <View className="pb-3 border-b border-b-gray-400">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
+          <AnalyticsCard title="Total Items" count={1240} icon={<Package size={20} color="#6366f1"/>} color="bg-indigo-50" border="border border-purple-300" />
+          <AnalyticsCard title="Low Stocks" count={12} icon={<AlertTriangle size={20} color="#f59e0b"/>} color="bg-amber-50" border="border border-yellow-400"/>
+          <AnalyticsCard title="Out of Stock" count={3} icon={<XCircle size={20} color="#ef4444"/>} color="bg-red-50" border="border border-red-300"/>
+        </ScrollView>
+      </View>
 
-                {/* Stock Info */}
-                <View className="flex-row justify-between items-center mb-3">
-                  <View>
-                    <Text className="text-3xl font-bold text-blue-600">
-                      {item.currentStock}<Text className="text-sm text-gray-500"> {item.unit}</Text>
-                    </Text>
-                    <Text className="text-gray-600">in stock</Text>
-                  </View>
-                  <View className="items-end">
-                    <Text className="text-lg font-bold text-gray-900">
-                      ${item.price.toLocaleString()}
-                    </Text>
-                    <Text className="text-gray-500">per {item.unit}</Text>
-                  </View>
-                </View>
+      {/* Main Stock List */}
+      <FlatList
+        data={STOCKS}
+        renderItem={renderStockCard}
+        keyExtractor={item => item.id}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      />
+      <BottomActions />
 
-                {/* Stock Level Indicator */}
-                <StockLevelIndicator item={item} />
-
-                {/* Quick Actions */}
-                <View className="flex-row mt-4 space-x-2">
-                  <TouchableOpacity
-                    className="flex-1 bg-blue-100 py-2 rounded-lg items-center"
-                    onPress={() => updateStock(item.id, item.currentStock)}
-                  >
-                    <Text className="text-blue-600 font-semibold">✏️ Update Stock</Text>
-                  </TouchableOpacity>
-                  {item.status === 'low-stock' || item.status === 'out-of-stock' ? (
-                    <TouchableOpacity
-                      className="flex-1 bg-red-100 py-2 rounded-lg items-center"
-                      onPress={() => reorderItem(item)}
-                    >
-                      <Text className="text-red-600 font-semibold">🛒 Reorder</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      className="flex-1 bg-gray-100 py-2 rounded-lg items-center"
-                      onPress={() => reorderItem(item)}
-                    >
-                      <Text className="text-gray-600 font-semibold">📦 Order More</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* Expanded Details */}
-              {expandedItem === item.id && (
-                <View className="px-5 pb-5 border-t border-gray-100 pt-4">
-                  <Text className="text-gray-700 font-semibold mb-3">📋 Item Details</Text>
-                  <View className="space-y-3">
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Category</Text>
-                      <Text className="font-medium">{item.category}</Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Minimum Required</Text>
-                      <Text className="font-medium">{item.minimumStock} {item.unit}</Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Reorder Level</Text>
-                      <Text className="font-medium">{item.reorderLevel} {item.unit}</Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Last Updated</Text>
-                      <Text className="font-medium">{item.lastUpdated}</Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Total Value</Text>
-                      <Text className="font-medium text-green-600">
-                        ${(item.currentStock * item.price).toLocaleString()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Expanded Actions */}
-                  <View className="flex-row space-x-3 mt-4">
-                    <TouchableOpacity
-                      className="flex-1 bg-amber-500 p-3 rounded-lg items-center"
-                      onPress={() => updateStock(item.id, item.currentStock)}
-                    >
-                      <Feather size={24} name="x-circle" color="#666" />
-                      <Text className="text-white text-sm mt-1">Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      className="flex-1 bg-green-500 p-3 rounded-lg items-center"
-                      onPress={() => updateStock(item.id, item.currentStock + 10)}
-                    >
-                      <Feather size={24} name="x-circle" color="#666" />
-                      <Text className="text-white text-sm mt-1">Add 10</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      className="flex-1 bg-red-500 p-3 rounded-lg items-center"
-                      onPress={() => deleteItem(item.id)}
-                    >
-                      <Feather size={24} name="x-circle" color="#666" />
-                      <Text className="text-white text-sm mt-1">Delete</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))
-        )}
-      </ScrollView>
-
-      {/* Filter Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showFilterModal}
-        onRequestClose={() => setShowFilterModal(false)}
+      {/* Floating Add Button */}
+      <Pressable
+        onPress={() => setShowAddModal(true)}
+        android_ripple={{ color: "rgba(255,255,255,0.2)" }}
+        className="absolute top-3 right-3 bg-indigo-600 w-16 h-16 rounded-full items-center justify-center shadow-lg"
       >
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl p-6 max-h-3/4">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-bold">Filter Categories</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Feather size={24} name="x-circle" color="#666" />
-              </TouchableOpacity>
+        <Plus size={28} color="white" />
+      </Pressable>
+
+      {/* add stock modal  */}
+      <AddStockModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess = {() => refreshStocks()}
+      />
+
+    </View>
+  );
+}
+
+// --- SUB-COMPONENTS ---
+function AnalyticsCard({ title, count, icon, color, border }: { title: string, count: number, icon: any, color: string; border: string }) {
+  return (
+  <View className={`${color} p-3 rounded-xl mr-1.5 border border-white shadow-sm ${border}`}>
+    {/* First line: icon + title */}
+    <View className="flex-row items-center space-x-2">
+      <View className="bg-white/50 w-8 h-1 rounded-full items-center justify-center">
+        {icon}
+      </View>
+      <Text className="text-[10px] uppercase font-black text-slate-500 tracking-wider">
+        {title}
+      </Text>
+    </View>
+
+    {/* Second line: count */}
+    <Text className="text-xl font-black text-slate-900 mt-2 text-center">{count}</Text>
+  </View>
+
+  );
+}
+
+// ADD STOCK
+interface StockForm {
+  productName: string;
+  category: string;
+  unit: string;
+  qrCode: string;
+  location: string;
+  expiryDate: string;
+  suppliers: string;
+  batchNumber: string;
+  targetMax: string;
+  status: 'in-stock' | 'low-stock' | 'out-of-stock';
+  quantity: string;
+  price: string;
+}
+
+function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState<StockForm>({
+    productName: '',
+    category: '',
+    unit: '',
+    qrCode: '',
+    location: 'Main Store', // Default as requested
+    expiryDate: '',
+    suppliers: '',
+    batchNumber: '',
+    targetMax: '',
+    status: 'in-stock',
+    quantity: '',
+    price: '',
+  });
+
+  const handleSubmit = () => {
+    console.log(fetchAllStock())
+    // Basic validation for Critical fields
+    if (!form.productName || !form.quantity || !form.price) {
+      console.warn("Please fill in critical fields: Name, Quantity, and Price");
+      return;
+    }
+
+    saveStock({
+      ...form,
+      quantity: Number(form.quantity),
+      price: Number(form.price),
+      targetMax: form.targetMax ? Number(form.targetMax) : null,
+      suppliers: form.suppliers // Convert string to array
+    })
+    onSuccess(); // trigger refetch
+    onClose();
+  };
+
+  const InputField = ({ label, value, onChangeText, placeholder, icon: Icon, critical = false, keyboardType = "default" }: any) => (
+    <View className="mb-4">
+      <View className="flex-row items-center mb-1">
+        <Text className="text-slate-600 font-bold text-xs uppercase tracking-widest">{label}</Text>
+        {critical && <Text className="text-red-500 ml-1">*</Text>}
+      </View>
+      <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+        {Icon && <Icon size={16} color="#94a3b8" className="mr-2" />}
+        <TextInput
+          className="flex-1 text-slate-900 font-medium"
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          placeholderTextColor="#cbd5e1"
+        />
+      </View>
+    </View>
+  );
+
+  const [importVisible, setImportVisible] = useState(false);
+
+
+  return <>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View className="flex-1 bg-black/60 justify-end">
+        <View className="bg-white rounded-t-[40px] h-[90%] p-6 shadow-2xl">
+          
+          {/* Header */}
+          <View className="flex-row justify-between items-center mb-6">
+            <Text className="text-2xl font-black text-slate-900">Add Stock</Text>
+            <Pressable onPress={onClose} className="bg-slate-100 p-2 rounded-full">
+               <Text className="text-slate-500 font-bold px-2">X</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+            
+            {/* 1. Critical Info Section */}
+            <Text className="text-blue-600 font-black text-[10px] uppercase mb-3 tracking-tighter">Critical Information</Text>
+            <InputField 
+              label="Product Name" 
+              critical 
+              placeholder="e.g. Azam Juice" 
+              value={form.productName} 
+              onChangeText={(t: string) => setForm({...form, productName: t})} 
+            />
+            
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <InputField 
+                  label="Quantity" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="0" 
+                  value={form.quantity} 
+                  onChangeText={(t: string) => setForm({...form, quantity: t})} 
+                />
+              </View>
+              <View className="flex-1">
+                <InputField 
+                  label="Price (TZS)" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="500" 
+                  value={form.price} 
+                  onChangeText={(t: string) => setForm({...form, price: t})} 
+                />
+              </View>
             </View>
 
-            <ScrollView>
-              <Text className="text-lg font-semibold mb-4">By Category</Text>
-              {(['all', 'food', 'drinks', 'supplies', 'others'] as StockCategory[]).map(category => (
-                <TouchableOpacity
-                  key={category}
-                  className={`px-4 py-3 rounded-lg mb-2 ${
-                    filterBy === category ? 'bg-blue-500' : 'bg-gray-100'
-                  }`}
-                  onPress={() => {
-                    setFilterBy(category);
-                    setShowFilterModal(false);
-                  }}
-                >
-                  <Text className={filterBy === category ? 'text-white font-semibold' : 'text-gray-700'}>
-                    {category === 'all' ? '📦 All Items' :
-                     category === 'food' ? '🍎 Food Items' :
-                     category === 'drinks' ? '🥤 Drinks' :
-                     category === 'supplies' ? '📦 Supplies' : '📁 Others'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Status Selection */}
+            <View className="mb-6">
+               <Text className="text-slate-600 font-bold text-xs uppercase mb-2">Stock Status</Text>
+               <View className="flex-row gap-3">
+                 {(['in-stock', 'low-stock', 'out-of-stock'] as const).map((s) => (
+                   <Pressable 
+                    key={s}
+                    onPress={() => setForm({...form, status: s})}
+                    className={`flex-1 py-2 rounded-lg border items-center ${form.status === s ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}
+                   >
+                     <Text className={`text-[10px] font-bold uppercase ${form.status === s ? 'text-white' : 'text-slate-500'}`}>{s.replace('-', ' ')}</Text>
+                   </Pressable>
+                 ))}
+               </View>
+            </View>
 
-              <Text className="text-lg font-semibold mt-6 mb-4">By Stock Status</Text>
-              {(['low-stock', 'out-of-stock'] as const).map(status => {
-                const count = stockItems.filter(item => item.status === status).length;
-                return (
-                  <TouchableOpacity
-                    key={status}
-                    className="bg-gray-100 px-4 py-3 rounded-lg mb-2 flex-row justify-between items-center"
-                    onPress={() => {
-                      // Filter by status - you could implement this
-                      Alert.alert('Filter by status', 'Coming soon!');
-                    }}
-                  >
-                    <Text className="text-gray-700">
-                      {status === 'low-stock' ? '⚠️ Low Stock Items' : '❌ Out of Stock'}
-                    </Text>
-                    <Text className={`font-semibold ${status === 'low-stock' ? 'text-amber-600' : 'text-red-600'}`}>
-                      {count}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            {/* 2. Warehouse & Logistic Section */}
+            <Text className="text-blue-600 font-black text-[10px] uppercase mt-4 mb-3 tracking-tighter">Warehouse & Logistics</Text>
+            <InputField 
+              label="Location / Shop" 
+              icon={MapPin} 
+              placeholder="Main Store" 
+              value={form.location} 
+              onChangeText={(t: string) => setForm({...form, location: t})} 
+            />
+            <InputField 
+              label="Batch Number" 
+              icon={Layers} 
+              placeholder="Optional" 
+              value={form.batchNumber} 
+              onChangeText={(t: string) => setForm({...form, batchNumber: t})} 
+            />
+            <InputField 
+              label="Supplier Names" 
+              icon={Truck} 
+              placeholder="Separated by comma (e.g. Azam, Mo)" 
+              value={form.suppliers} 
+              onChangeText={(t: string) => setForm({...form, suppliers: t})} 
+            />
+
+            {/* 3. Optional Metadata */}
+            <Text className="text-blue-600 font-black text-[10px] uppercase mt-4 mb-3 tracking-tighter">Additional Details (Optional)</Text>
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <InputField label="Category" placeholder="e.g. Drinks" value={form.category} onChangeText={(t: string) => setForm({...form, category: t})} />
+              </View>
+              <View className="flex-1">
+                <InputField label="Unit" placeholder="e.g. kg, pcs" value={form.unit} onChangeText={(t: string) => setForm({...form, unit: t})} />
+              </View>
+            </View>
+            <InputField label="QR/Bar Code" icon={Hash} placeholder="Scan or type code" value={form.qrCode} onChangeText={(t: string) => setForm({...form, qrCode: t})} />
+            <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} />
+            <InputField label="Target Max Stock" icon={Target} keyboardType="numeric" placeholder="1000" value={form.targetMax} onChangeText={(t: string) => setForm({...form, targetMax: t})} />
+
+          </ScrollView>
+
+          {/* Action Buttons */}
+          <View className="pt-3 flex-row gap-3 bg-white">
+            {/* CANCEL BUTTON */}
+            <Pressable 
+              onPress={onClose} 
+              className="flex-1 bg-slate-100 py-4 rounded-2xl items-center flex-row justify-center border border-slate-200"
+            >
+              <X size={18} color="#475569" />
+              <Text className="font-bold text-slate-600 ml-1">Cancel</Text>
+            </Pressable>
+
+            {/* IMPORT BUTTON */}
+            <Pressable 
+              onPress={() => setImportVisible(true)}              
+              className="flex-1 bg-blue-50 py-4 rounded-2xl items-center flex-row justify-center border border-blue-200"
+            >
+              <Download size={18} color="#2563eb" />
+              <Text className="font-bold text-blue-600 ml-1">Import</Text>
+            </Pressable>
+
+            {/* SAVE BUTTON - The Primary Action */}
+            <Pressable 
+              onPress={handleSubmit} 
+              className="flex-[2] bg-emerald-600 py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-200"
+            >
+              <Ionicons name="save" size={20} color="white" />
+              <Text className="font-bold text-white ml-2 text-lg">Save Product</Text>
+            </Pressable>
+          </View>
+
+        </View>
+      </View>
+    </Modal>
+
+    <ImportModal
+  visible={importVisible}
+  onClose={() => setImportVisible(false)}
+  onImport={(items) => {
+    // items are StockInput[]
+    // items.forEach(item => {
+    //   saveToDatabase(item);
+    // });
+
+    setImportVisible(false);
+     // or refreshStocks()
+  }}
+/>
+
+  </>
+}
+
+
+
+interface ImportModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onImport: (data: StockInput[]) => void;
+}
+
+const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport }) => {
+  const [csvData, setCsvData] = useState<string>('');
+
+  const handleFilePick = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'text/csv',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      // In a real app, you would parse the CSV file here
+      Alert.alert('File Selected', 'CSV file selected for import');
+      setCsvData('Sample CSV data would be parsed here...');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to pick file');
+    }
+  };
+
+  const parseCSVData = (csvText: string): StockInput[] => {
+    // Simplified CSV parsing - you would need proper CSV parsing logic
+    const lines = csvText.split('\n');
+    const parsed: StockInput[] = [];
+    
+    // Skip header row and process data rows
+    for (let i = 1; i < lines.length; i++) {
+      const columns = lines[i].split(',');
+      if (columns.length >= 8) {
+        parsed.push({
+          productName: columns[1]?.trim() || `Imported Product ${i}`,
+          category: columns[2]?.trim() || 'General',
+          unit: columns[4]?.trim() || 'pcs',
+          quantity: parseInt(columns[3]?.trim()) || 0,
+          price: parseFloat(columns[5]?.trim()) || 0,
+          targetMax: null,
+          status: 'in-stock',
+          qrCode: columns[0]?.trim() || `QR-${Date.now()}-${i}`,
+          location: columns[7]?.trim() || 'Warehouse',
+          expiryDate: '',
+          suppliers: columns[6]?.trim() || 'Supplier',
+          batchNumber: `BATCH-${Date.now()}`
+        });
+      }
+    }
+    
+    return parsed.length > 0 ? parsed : [
+      {
+        productName: 'Imported Product 1',
+        category: 'Electronics',
+        unit: 'pcs',
+        quantity: 50,
+        price: 99.99,
+        targetMax: null,
+        status: 'in-stock',
+        qrCode: 'QR-IMPORT-001',
+        location: 'Warehouse A',
+        expiryDate: '',
+        suppliers: 'Import Supplier',
+        batchNumber: 'BATCH-001'
+      },
+      {
+        productName: 'Imported Product 2',
+        category: 'Fashion',
+        unit: 'pcs',
+        quantity: 100,
+        price: 49.99,
+        targetMax: null,
+        status: 'in-stock',
+        qrCode: 'QR-IMPORT-002',
+        location: 'Warehouse B',
+        expiryDate: '',
+        suppliers: 'Import Supplier',
+        batchNumber: 'BATCH-002'
+      }
+    ];
+  };
+
+  const handleImportSubmit = () => {
+    if (csvData) {
+      // Parse CSV data
+      const parsedData = parseCSVData(csvData);
+      onImport(parsedData);
+      onClose();
+    } else {
+      Alert.alert('Error', 'Please select a CSV file first');
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-black/50 justify-end">
+        <View className="bg-white rounded-t-3xl max-h-[90%]">
+          {/* Header */}
+          <View className="flex-row justify-between items-center p-6 border-b border-gray-200">
+            <Text className="text-2xl font-bold text-gray-900">Import Stock from CSV</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={28} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView className="p-6" showsVerticalScrollIndicator={false}>
+            <View>
+              <TouchableOpacity
+                onPress={handleFilePick}
+                className="border-2 border-dashed border-gray-300 rounded-2xl p-8 items-center mb-6"
+              >
+                <Ionicons name="cloud-upload" size={48} color="#9CA3AF" />
+                <Text className="text-lg font-semibold text-gray-900 mt-4">Upload CSV File</Text>
+                <Text className="text-gray-500 mt-2">Click to browse or drag and drop</Text>
+              </TouchableOpacity>
+
+              <Text className="text-blue-500 mb-6 text-center">Download Sample CSV Template</Text>
+
+
+              {csvData && (
+                <View className="bg-gray-50 rounded-xl p-4 mb-6">
+                  <Text className="font-medium text-gray-900 mb-2">Preview:</Text>
+                  <Text className="text-gray-600">Product 1, Electronics, 50, pcs, 99.99, Supplier A, Warehouse A</Text>
+                  <Text className="text-gray-600">Product 2, Fashion, 100, pcs, 49.99, Supplier B, Warehouse B</Text>
+                </View>
+              )}
+
+              <View className="bg-blue-50 rounded-xl p-4 mb-6">
+                <Text className="font-semibold text-blue-900 mb-2">CSV Format Requirements:</Text>
+                <Text className="text-blue-700">• Required columns: Product Name, Quantity, Price</Text>
+                <Text className="text-blue-700">• Optional columns: Supplier, Location, QR Code, category, Unit, expiry Date, batch Number, target Max (for maximum number of product to order) </Text>
+                <Text className="text-blue-700">• File must be in .csv format</Text>
+                <Text className="text-blue-700">• Maximum file size: 10MB</Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Action Buttons */}
+          <View className="flex-row p-6 border-t border-gray-200 gap-5">
+            <TouchableOpacity
+              onPress={onClose}
+              className="flex-1 bg-gray-100 py-4 rounded-xl items-center border border-gray-400"
+            >
+              <Text className="text-gray-700 font-semibold">Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleImportSubmit}
+              className="flex-1 bg-blue-500 py-4 rounded-xl items-center"
+              disabled={!csvData}
+            >
+              <Text className="text-white font-semibold">
+                {csvData ? 'Import Data' : 'Select File First'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-
-      {/* Add Item Modal */}
-      <AddItemModal />
-    </SafeAreaView>
+      </View>
+    </Modal>
   );
 };
-
-export default Stock;

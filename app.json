@@ -66,6 +66,12 @@
         }
       ],
       [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
         "expo-audio",
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
@@ -95,7 +101,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0f9ae87c-894c-4ad4-a37d-ed5643357c71"
+        "projectId": "e7b7270a-e4f1-4b2e-9508-0e7c4fddda0d"
       },
       "expo-navigation-bar": {
         "backgroundColor": "#0f172a",
@@ -106,6 +112,6 @@
         "position": "relative"
       }
     },
-    "owner": "twahir21"
+    "owner": "twahir47"
   }
 }

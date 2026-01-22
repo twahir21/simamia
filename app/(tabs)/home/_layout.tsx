@@ -6,7 +6,7 @@ import { View, Text, Image } from "react-native";
 
 export default function HomeLayout() {
   return <>
-    <StatusBar style="dark" />
+    <StatusBar style="dark"  backgroundColor="white"/>
     <Stack>
         <Stack.Screen
           name="index"
@@ -35,7 +35,8 @@ export default function HomeLayout() {
             ),
           }}
         />
-
+        <Stack.Screen name="stock" options={{ title: "Stock" }} />
+        <Stack.Screen name="debts" options={{ title: "Debts" }} />
         <Stack.Screen 
           name="sales"
           options={{
@@ -49,8 +50,7 @@ export default function HomeLayout() {
           }}
 
         />
-      <Stack.Screen name="stock" options={{ title: "Stock" }} />
-      <Stack.Screen name="debts" options={{ title: "Debts" }} />
+
     </Stack>
   </>
 }

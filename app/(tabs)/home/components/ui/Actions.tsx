@@ -1,7 +1,7 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
 
-export function BottomActions () {
+export const BottomActions =  () =>  {
     return <>
       {/* Bottom Action Bar */}
       <View className="bg-white border-t border-gray-200 p-3">
