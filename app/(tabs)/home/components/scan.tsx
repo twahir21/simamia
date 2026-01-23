@@ -201,7 +201,7 @@ export default function ScanScreen() {
             <View className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-xl" />
           </View>
           
-          <Text className="text-white mt-3 opacity-70 text-xl font-bold">Align barcode in box</Text>
+          <Text className="text-white mt-3 opacity-70 text-xl font-bold">Align barcode/Qrcode in box</Text>
 
           {/* Success Feedback Message */}
           {scanResult === "success" && (

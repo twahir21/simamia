@@ -43,6 +43,10 @@ on expanding  show batch number target, expire date and list of suppliers (ul)
 ## important
 if someone provide max target give a progress bar for easy spotting product volume so that user can easily spot what product is having low stocks.
 
+when buying new stock, compare buying and selling price of new goods and update to the business.
+
+suppliers may differ so track with batch number
+
 Solve the ordering system with Linear programming so as to minimize costs, including the storage costs, and to maximize the profit 
 - You will do automated re-odering with constraints as profit of a product, expire date (if available), current cash flow
 - dynamic pricing based on stock level, demand to clear slow moving inventory

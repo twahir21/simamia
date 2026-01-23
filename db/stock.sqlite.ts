@@ -17,9 +17,11 @@ export const initStockDB = () => {
       suppliers TEXT, 
       batchNumber TEXT,
       targetMax INTEGER,
-      status TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'in-stock',
       quantity INTEGER NOT NULL,
-      price REAL NOT NULL,
+      sellingPrice REAL NOT NULL,
+      buyingPrice REAL NOT NULL,
+      totalCost REAL,
       lastUpdate DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -31,8 +33,8 @@ export const saveStock = (data: StockInput) => {
       `INSERT INTO stock (
         productName, category, unit, qrCode, location, 
         expiryDate, suppliers, batchNumber, targetMax, 
-        status, quantity, price
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        status, quantity, sellingPrice, buyingPrice, totalCost
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.productName,
         data.category || null,
@@ -45,7 +47,9 @@ export const saveStock = (data: StockInput) => {
         data.targetMax ? Number(data.targetMax) : null,
         data.status,
         Number(data.quantity),
-        Number(data.price)
+        Number(data.sellingPrice),
+        Number(data.buyingPrice),
+        Number(data.totalCost)
       ]
     );
   } catch (error) {
@@ -63,6 +67,12 @@ export const saveStock = (data: StockInput) => {
 export const fetchAllStock = () => {
   return db.getAllSync<FetchStock>(`SELECT * FROM stock ORDER BY lastUpdate DESC`);
 };
+
+export const deleteStockDb = () => {
+  return db.execSync(`
+  DROP TABLE IF EXISTS stock;
+`);
+}
 
 
 export const searchStock = (query: string) => {
@@ -89,22 +99,26 @@ export const updateStock = (id: number, data: Partial<StockInput>) => {
       targetMax = ?,
       status = ?,
       quantity = ?,
-      price = ?,
+      sellingPrice = ?,
+      buyingPrice = ?,
+      totalCost = ?,
       lastUpdate = CURRENT_TIMESTAMP
      WHERE id = ?`,
     [
-      data.productName,
-      data.category ?? null,
-      data.unit ?? null,
-      data.qrCode ?? null,
+      data.productName ?? "",
+      data.category ?? "",
+      data.unit ?? "",
+      data.qrCode ?? "",
       data.location ?? 'Main Store',
-      data.expiryDate ?? null,
-      data.suppliers ?? null,
-      data.batchNumber ?? null,
-      data.targetMax ?? null,
-      data.status,
-      data.quantity,
-      data.price,
+      data.expiryDate ?? "",
+      data.suppliers ?? "",
+      data.batchNumber ?? "",
+      data.targetMax ?? 0,
+      data.status ?? "in-stock",
+      data.quantity ?? 0,
+      data.sellingPrice ?? 0,
+      data.buyingPrice ?? 0,
+      data.totalCost ?? 0,
       id
     ]
   );
@@ -113,4 +127,22 @@ export const updateStock = (id: number, data: Partial<StockInput>) => {
 // do soft delete instead of hard delete (for easy backups)
 export const deleteStock = (id: number) => {
   db.runSync(`DELETE FROM stock WHERE id = ?`, [id]);
+};
+
+type stockAnalysisTs = {  lowStock: number; totalItems: number; outOfStock: number} | null;
+
+export const stockAnalysis = () => {
+  const result: stockAnalysisTs = db.getFirstSync(`
+    SELECT
+      COUNT(*) AS totalItems,
+      SUM(CASE WHEN quantity > 0 AND quantity < 5 THEN 1 ELSE 0 END) AS lowStock,
+      SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END) AS outOfStock
+    FROM stock;
+  `);
+
+  return {
+    totalItems: result?.totalItems || 0,
+    lowStock: result?.lowStock || 0,
+    outOfStock: result?.outOfStock || 0,
+  };
 };

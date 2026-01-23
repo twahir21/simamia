@@ -1,11 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert } from 'react-native';
-import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Layers, Truck, Hash, Calendar, Target, X, Download } from 'lucide-react-native';
+import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Truck, Hash, Calendar, Target, X, Download, PackageSearch } from 'lucide-react-native';
 import { BottomActions } from './components/ui/Actions';
-import { fetchAllStock, saveStock } from '@/db/stock.sqlite';
+import { fetchAllStock, saveStock, stockAnalysis } from '@/db/stock.sqlite';
 import { FetchStock, StockInput } from '@/types/stock.types';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+
+const generateStockBatch = (supplierName?: string): string => {
+  // 1. Get first 15 letters of supplier (uppercase)
+  const sup = (supplierName || "MSAMBAZAJI").substring(0, 15).toUpperCase().replace(/\s+/g, "") ; // removes spaces.
+  
+  // 2. Get Date in DDMMYY format
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = String(now.getFullYear()).slice(-2);
+  const dateStr = `${day}${month}${year}`;
+
+  // 3. Return the code
+  return `${sup}-${dateStr}`;
+};
 
 
 export default function Stock() {
@@ -53,12 +68,29 @@ export default function Stock() {
             </View>
             <View className="items-end">
               <Text className="text-[10px] text-slate-400 uppercase font-bold">Price</Text>
-              <Text className="text-xl font-black text-slate-900">{item.price.toLocaleString()} TZS</Text>
+              <Text className="text-xl font-black text-slate-900">{item.sellingPrice.toLocaleString()} TZS</Text>
             </View>
           </View>
+          <View className="flex-row my-2">
+            <Text className="text-xs font-bold text-slate-700">Buying Price:</Text>
+            <Text className="text-xs text-slate-600 pl-1">{item.buyingPrice?.toLocaleString() || 'N/A'} TZS</Text>
+          </View>
 
-          <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-slate-50">
-             <Text className="text-[10px] text-slate-400 italic">Updated: {item.lastUpdate}</Text>
+          <View className="flex-row my-2">
+            <Text className="text-xs font-bold text-slate-700">Cost:</Text>
+            <Text className="text-xs text-slate-600 pl-1">{item.totalCost?.toLocaleString() || 'N/A'} TZS</Text>
+          </View>
+
+          <View className="flex-row my-2">
+            <Text className="text-xs font-bold text-slate-700">Profit per Unit:</Text>
+            <Text className="text-xs text-green-600 pl-1">
+              {(item.sellingPrice - (item.buyingPrice ?? 0) - (item.totalCost ?? 0)).toLocaleString()} TZS
+            </Text>
+          </View>
+
+
+          <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-slate-400">
+             <Text className="text-[10px] text-slate-400 italic">Updated: {new Date(item.lastUpdate + 'Z').toLocaleString()}</Text>
              <TouchableOpacity onPress={() => setExpandedId(isExpanded ? null : item.id)}>
                 <Text className="text-blue-600 font-bold text-xs">{isExpanded ? "Show Less" : "Show More"}</Text>
              </TouchableOpacity>
@@ -144,9 +176,9 @@ export default function Stock() {
       {/* Horizontal Analytics Card */}
       <View className="pb-3 border-b border-b-gray-400">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-          <AnalyticsCard title="Total Items" count={1240} icon={<Package size={20} color="#6366f1"/>} color="bg-indigo-50" border="border border-purple-300" />
-          <AnalyticsCard title="Low Stocks" count={12} icon={<AlertTriangle size={20} color="#f59e0b"/>} color="bg-amber-50" border="border border-yellow-400"/>
-          <AnalyticsCard title="Out of Stock" count={3} icon={<XCircle size={20} color="#ef4444"/>} color="bg-red-50" border="border border-red-300"/>
+          <AnalyticsCard title="Total Items" count={stockAnalysis().totalItems ?? 0} icon={<Package size={20} color="#6366f1"/>} color="bg-indigo-50" border="border border-purple-300" />
+          <AnalyticsCard title="Low Stocks" count={stockAnalysis().lowStock} icon={<AlertTriangle size={20} color="#f59e0b"/>} color="bg-amber-50" border="border border-yellow-400"/>
+          <AnalyticsCard title="Out of Stock" count={stockAnalysis().outOfStock} icon={<XCircle size={20} color="#ef4444"/>} color="bg-red-50" border="border border-red-300"/>
         </ScrollView>
       </View>
 
@@ -157,6 +189,18 @@ export default function Stock() {
         keyExtractor={item => item.id}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+        <View className="flex-1 items-center justify-center py-20">
+          <PackageSearch size={48} color="#cbd5e1" />
+          <Text className="text-slate-500 font-bold m-4">No items found</Text>
+          <Text className="text-slate-400 text-sm">We couldn&apos;t find any products matching your criteria.</Text>
+          <TouchableOpacity className="mt-4 bg-sky-800 px-6 py-3 rounded-lg">
+            <Text className="text-white font-bold"         
+              onPress={() => setShowAddModal(true)}
+            >Add New Item</Text>
+          </TouchableOpacity>
+        </View>
+        }
       />
       <BottomActions />
 
@@ -164,7 +208,7 @@ export default function Stock() {
       <Pressable
         onPress={() => setShowAddModal(true)}
         android_ripple={{ color: "rgba(255,255,255,0.2)" }}
-        className="absolute top-3 right-3 bg-indigo-600 w-16 h-16 rounded-full items-center justify-center shadow-lg"
+        className="absolute top-3 right-3 bg-sky-800 w-16 h-16 rounded-full items-center justify-center shadow-lg"
       >
         <Plus size={28} color="white" />
       </Pressable>
@@ -201,24 +245,9 @@ function AnalyticsCard({ title, count, icon, color, border }: { title: string, c
   );
 }
 
-// ADD STOCK
-interface StockForm {
-  productName: string;
-  category: string;
-  unit: string;
-  qrCode: string;
-  location: string;
-  expiryDate: string;
-  suppliers: string;
-  batchNumber: string;
-  targetMax: string;
-  status: 'in-stock' | 'low-stock' | 'out-of-stock';
-  quantity: string;
-  price: string;
-}
 
 function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onClose: () => void; onSuccess: () => void }) {
-  const [form, setForm] = useState<StockForm>({
+  const [form, setForm] = useState<StockInput>({
     productName: '',
     category: '',
     unit: '',
@@ -227,16 +256,19 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
     expiryDate: '',
     suppliers: '',
     batchNumber: '',
-    targetMax: '',
+    targetMax: 0,
     status: 'in-stock',
-    quantity: '',
-    price: '',
+    quantity: 0,
+    sellingPrice: 0,
+    buyingPrice: 0,
+    totalCost: 0
   });
 
   const handleSubmit = () => {
     console.log(fetchAllStock())
-    // Basic validation for Critical fields
-    if (!form.productName || !form.quantity || !form.price) {
+    // deleteStockDb();
+    // Basic validation for Critical fieldsPrice
+    if (!form.productName || !form.quantity || !form.sellingPrice) {
       console.warn("Please fill in critical fields: Name, Quantity, and Price");
       return;
     }
@@ -244,9 +276,10 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
     saveStock({
       ...form,
       quantity: Number(form.quantity),
-      price: Number(form.price),
+      sellingPrice: Number(form.sellingPrice),
       targetMax: form.targetMax ? Number(form.targetMax) : null,
-      suppliers: form.suppliers // Convert string to array
+      suppliers: form.suppliers,
+      batchNumber: generateStockBatch(form.suppliers?.split(",")[0])
     })
     onSuccess(); // trigger refetch
     onClose();
@@ -308,7 +341,7 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
                   keyboardType="numeric" 
                   placeholder="0" 
                   value={form.quantity} 
-                  onChangeText={(t: string) => setForm({...form, quantity: t})} 
+                  onChangeText={(t: string) => setForm({...form, quantity: Number(t)})} 
                 />
               </View>
               <View className="flex-1">
@@ -317,27 +350,47 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
                   critical 
                   keyboardType="numeric" 
                   placeholder="500" 
-                  value={form.price} 
-                  onChangeText={(t: string) => setForm({...form, price: t})} 
+                  value={form.sellingPrice} 
+                  onChangeText={(t: string) => setForm({...form, sellingPrice: Number(t)})} 
                 />
               </View>
             </View>
 
-            {/* Status Selection */}
-            <View className="mb-6">
-               <Text className="text-slate-600 font-bold text-xs uppercase mb-2">Stock Status</Text>
-               <View className="flex-row gap-3">
-                 {(['in-stock', 'low-stock', 'out-of-stock'] as const).map((s) => (
-                   <Pressable 
-                    key={s}
-                    onPress={() => setForm({...form, status: s})}
-                    className={`flex-1 py-2 rounded-lg border items-center ${form.status === s ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}
-                   >
-                     <Text className={`text-[10px] font-bold uppercase ${form.status === s ? 'text-white' : 'text-slate-500'}`}>{s.replace('-', ' ')}</Text>
-                   </Pressable>
-                 ))}
-               </View>
+            <View className='flex-row gap-3'>
+              <View className="flex-1">
+                <InputField 
+                  label="Buying Price (TZS)" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="200" 
+                  value={form.buyingPrice} 
+                  onChangeText={(t: string) => setForm({...form, buyingPrice: Number(t)})} 
+                />
+              </View>
+
+              <View className="flex-1">
+                <InputField 
+                  label="Minimum stock" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="5"
+                  value={form.totalCost} 
+                  onChangeText={(t: string) => setForm({...form, totalCost: Number(t)})} 
+                />
+              </View>
             </View>
+
+              <View className="flex-1">
+                <InputField 
+                  label="Transport & other costs (TZS)" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="0"
+                  value={form.totalCost} 
+                  onChangeText={(t: string) => setForm({...form, totalCost: Number(t)})} 
+                />
+              </View>
+
 
             {/* 2. Warehouse & Logistic Section */}
             <Text className="text-blue-600 font-black text-[10px] uppercase mt-4 mb-3 tracking-tighter">Warehouse & Logistics</Text>
@@ -348,13 +401,7 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
               value={form.location} 
               onChangeText={(t: string) => setForm({...form, location: t})} 
             />
-            <InputField 
-              label="Batch Number" 
-              icon={Layers} 
-              placeholder="Optional" 
-              value={form.batchNumber} 
-              onChangeText={(t: string) => setForm({...form, batchNumber: t})} 
-            />
+
             <InputField 
               label="Supplier Names" 
               icon={Truck} 
@@ -375,7 +422,7 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
             </View>
             <InputField label="QR/Bar Code" icon={Hash} placeholder="Scan or type code" value={form.qrCode} onChangeText={(t: string) => setForm({...form, qrCode: t})} />
             <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} />
-            <InputField label="Target Max Stock" icon={Target} keyboardType="numeric" placeholder="1000" value={form.targetMax} onChangeText={(t: string) => setForm({...form, targetMax: t})} />
+            <InputField label="Target Max Stock" icon={Target} keyboardType="numeric" placeholder="1000" value={form.targetMax} onChangeText={(t: string) => setForm({...form, targetMax: Number(t)})} />
 
           </ScrollView>
 
@@ -472,13 +519,15 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
           category: columns[2]?.trim() || 'General',
           unit: columns[4]?.trim() || 'pcs',
           quantity: parseInt(columns[3]?.trim()) || 0,
-          price: parseFloat(columns[5]?.trim()) || 0,
+          sellingPrice: parseFloat(columns[5]?.trim()) || 0,
           targetMax: null,
           status: 'in-stock',
           qrCode: columns[0]?.trim() || `QR-${Date.now()}-${i}`,
           location: columns[7]?.trim() || 'Warehouse',
           expiryDate: '',
           suppliers: columns[6]?.trim() || 'Supplier',
+          buyingPrice: Number("2000"),
+          totalCost: 0,
           batchNumber: `BATCH-${Date.now()}`
         });
       }
@@ -488,15 +537,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
       {
         productName: 'Imported Product 1',
         category: 'Electronics',
+        buyingPrice: Number("2500"),
         unit: 'pcs',
         quantity: 50,
-        price: 99.99,
+        sellingPrice: 99.99,
         targetMax: null,
         status: 'in-stock',
         qrCode: 'QR-IMPORT-001',
         location: 'Warehouse A',
         expiryDate: '',
         suppliers: 'Import Supplier',
+        totalCost: 0,
         batchNumber: 'BATCH-001'
       },
       {
@@ -504,7 +555,9 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
         category: 'Fashion',
         unit: 'pcs',
         quantity: 100,
-        price: 49.99,
+        buyingPrice: Number("5000"),
+        totalCost: 0,
+        sellingPrice: 49.99,
         targetMax: null,
         status: 'in-stock',
         qrCode: 'QR-IMPORT-002',
