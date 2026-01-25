@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert, ActivityIndicator } from 'react-native';
 import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Truck, Hash, Calendar, Target, X, Download, PackageSearch } from 'lucide-react-native';
 import { BottomActions } from './components/ui/Actions';
-import { deleteStock, fetchAllStock, saveStock, stockAnalysis, updateStock } from '@/db/stock.sqlite';
+import { deleteStock, fetchAllStock, saveStock, searchStock, stockAnalysis, updateStock } from '@/db/stock.sqlite';
 import { FetchStock, StockInput } from '@/types/stock.types';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -195,6 +195,30 @@ export default function Stock() {
       </View>
     );
   };
+  
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Run search whenever query changes
+  useEffect(() => {
+
+    setLoading(true);
+
+    // small debounce to avoid too many DB calls
+    const timeout = setTimeout(() => {
+      try {
+        const items = searchStock(query);
+        setStocks(items);
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [query]);
+
 
   return (
     <View className="flex-1 bg-slate-50 pt-4 relative">
@@ -203,8 +227,10 @@ export default function Stock() {
         <View className="bg-white flex-row items-center px-4 py-1 rounded-2xl border border-slate-200 shadow-sm">
           <Search size={20} color="#94a3b8" />
           <TextInput 
-            placeholder="Search name, code, or category..." 
+            placeholder="Search name, barcode or category ..." 
             className="flex-1 ml-3 text-slate-700 font-medium"
+            value={query}
+            onChangeText={setQuery}
           />
         </View>
       </View>
@@ -219,7 +245,13 @@ export default function Stock() {
       </View>
 
       {/* Main Stock List */}
-      <FlatList
+      {loading ? (<>
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#075985" />
+        <Text className="text-slate-500 mt-2 font-medium">Fetching inventory...</Text>
+      </View>
+      </>): 
+      (<FlatList
         data={STOCKS}
         renderItem={renderStockCard}
         keyExtractor={item => item.id}
@@ -237,7 +269,7 @@ export default function Stock() {
           </TouchableOpacity>
         </View>
         }
-      />
+      />)}
       <BottomActions />
 
       {/* Floating Add Button */}

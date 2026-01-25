@@ -78,11 +78,11 @@ export const deleteStockDb = () => {
 
 
 export const searchStock = (query: string) => {
-  return db.getAllSync(
+  return db.getAllSync<FetchStock>(
     `SELECT * FROM stock 
      WHERE productName LIKE ? 
-     OR category LIKE ?`,
-    [`%${query}%`, `%${query}%`]
+     OR qrCode LIKE ? OR category LIKE ?`,
+    [`%${query}%`, `%${query}%`, `%${query}`]
   );
 };
 
