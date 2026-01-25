@@ -22,6 +22,7 @@ export const initStockDB = () => {
       sellingPrice REAL NOT NULL,
       buyingPrice REAL NOT NULL,
       totalCost REAL,
+      minStock REAL NOT NULL,
       lastUpdate DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -33,8 +34,8 @@ export const saveStock = (data: StockInput) => {
       `INSERT INTO stock (
         productName, category, unit, qrCode, location, 
         expiryDate, suppliers, batchNumber, targetMax, 
-        status, quantity, sellingPrice, buyingPrice, totalCost
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        status, quantity, sellingPrice, buyingPrice, totalCost, minStock
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.productName,
         data.category || null,
@@ -49,7 +50,8 @@ export const saveStock = (data: StockInput) => {
         Number(data.quantity),
         Number(data.sellingPrice),
         Number(data.buyingPrice),
-        Number(data.totalCost)
+        Number(data.totalCost),
+        Number(data.minStock)
       ]
     );
   } catch (error) {
@@ -102,6 +104,7 @@ export const updateStock = (id: number, data: Partial<StockInput>) => {
       sellingPrice = ?,
       buyingPrice = ?,
       totalCost = ?,
+      minStock = ?,
       lastUpdate = CURRENT_TIMESTAMP
      WHERE id = ?`,
     [
@@ -119,6 +122,7 @@ export const updateStock = (id: number, data: Partial<StockInput>) => {
       data.sellingPrice ?? 0,
       data.buyingPrice ?? 0,
       data.totalCost ?? 0,
+      data.minStock ?? 0,
       id
     ]
   );

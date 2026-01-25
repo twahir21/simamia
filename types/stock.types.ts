@@ -13,6 +13,7 @@ export interface StockInput {
   quantity: number;
   sellingPrice: number;
   totalCost: number;
+  minStock: number;
 }
 
 export interface FetchStock extends StockInput {

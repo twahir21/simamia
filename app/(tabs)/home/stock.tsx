@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert } from 'react-native';
 import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Truck, Hash, Calendar, Target, X, Download, PackageSearch } from 'lucide-react-native';
 import { BottomActions } from './components/ui/Actions';
-import { fetchAllStock, saveStock, stockAnalysis } from '@/db/stock.sqlite';
+import { deleteStock, fetchAllStock, saveStock, stockAnalysis, updateStock } from '@/db/stock.sqlite';
 import { FetchStock, StockInput } from '@/types/stock.types';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -26,7 +26,9 @@ const generateStockBatch = (supplierName?: string): string => {
 export default function Stock() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [STOCKS, setStocks] = useState<FetchStock[]>([]);
+    const [editingStock, setEditingStock] = useState<FetchStock | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
@@ -45,6 +47,27 @@ export default function Stock() {
     // Status colors
     const statusColor = item.status === 'in-stock' ? 'text-emerald-600' : item.status === 'low-stock' ? 'text-amber-500' : 'text-red-500';
     const statusBg = item.status === 'in-stock' ? 'bg-emerald-50' : item.status === 'low-stock' ? 'bg-amber-50' : 'bg-red-50';
+
+    const confirmDelete = (name: string, id: string) => {
+      Alert.alert(
+        'Delete item',
+        `Are you sure you want to delete ${name}? This action cannot be undone.`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              deleteStock(Number(id));
+              refreshStocks();
+            },
+          },
+        ]
+      );
+    };
 
     return (
       <View className="bg-white mx-4 mb-3 rounded-2xl border border-slate-400 shadow-sm overflow-hidden">
@@ -67,7 +90,7 @@ export default function Stock() {
               <Text className="text-xl font-black text-slate-900">{item.quantity}</Text>
             </View>
             <View className="items-end">
-              <Text className="text-[10px] text-slate-400 uppercase font-bold">Price</Text>
+              <Text className="text-[10px] text-slate-400 uppercase font-bold">Selling Price</Text>
               <Text className="text-xl font-black text-slate-900">{item.sellingPrice.toLocaleString()} TZS</Text>
             </View>
           </View>
@@ -115,6 +138,11 @@ export default function Stock() {
                 <Text className="text-xs text-red-500 pl-1">{item.expiryDate || 'No Expiry'}</Text>
               </View>
 
+              <View className="flex-row my-2">
+                <Text className="text-xs font-bold text-slate-700">Minimum Stock:</Text>
+                <Text className="text-xs text-slate-600 pl-1">{item.minStock.toLocaleString() || 'N/A'} units</Text>
+              </View>
+
               {item.suppliers && (
                 <View>
                   <Text className="text-xs font-bold text-slate-700 mb-1">Suppliers:</Text>
@@ -130,6 +158,7 @@ export default function Stock() {
           <View className="flex-row gap-3 mt-4 mb-2">
             <TouchableOpacity
               activeOpacity={0.8}
+              onPress={() => { setShowEditModal(true); setEditingStock(item)}}
               className="flex-1 bg-sky-600 flex-row items-center justify-center py-3 rounded-xl"
             >
               <Edit3 size={16} color="white" />
@@ -150,6 +179,7 @@ export default function Stock() {
 
             <TouchableOpacity
               activeOpacity={0.8}
+              onPress={() =>  confirmDelete(item.productName, item.id )}
               className="bg-red-50 border border-red-500 p-3 rounded-xl"
             >
               <Trash2 size={20} color="#ef4444" />
@@ -220,6 +250,14 @@ export default function Stock() {
         onSuccess = {() => refreshStocks()}
       />
 
+      {/* Edit stock modal  */}
+      <EditStockModal
+        visible={showEditModal}
+        stock={editingStock}
+        onClose={() => { setShowEditModal(false); setEditingStock(null) }}
+        onSuccess={() => { refreshStocks(); setEditingStock(null); setShowEditModal(false); }} 
+      />
+
     </View>
   );
 }
@@ -261,15 +299,19 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
     quantity: 0,
     sellingPrice: 0,
     buyingPrice: 0,
-    totalCost: 0
+    totalCost: 0,
+    minStock: 5,
   });
 
   const handleSubmit = () => {
-    console.log(fetchAllStock())
-    // deleteStockDb();
     // Basic validation for Critical fieldsPrice
-    if (!form.productName || !form.quantity || !form.sellingPrice) {
-      console.warn("Please fill in critical fields: Name, Quantity, and Price");
+    if (!form.productName || !form.quantity || !form.sellingPrice || !form.buyingPrice || !form.minStock) {
+      Alert.alert(
+        "Missing information",
+        "Please fill in all required fields with * before saving.",
+        [{ text: "OK" }]
+      );
+
       return;
     }
 
@@ -346,7 +388,7 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
               </View>
               <View className="flex-1">
                 <InputField 
-                  label="Price (TZS)" 
+                  label="Selling Price (TZS)" 
                   critical 
                   keyboardType="numeric" 
                   placeholder="500" 
@@ -374,8 +416,8 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
                   critical 
                   keyboardType="numeric" 
                   placeholder="5"
-                  value={form.totalCost} 
-                  onChangeText={(t: string) => setForm({...form, totalCost: Number(t)})} 
+                  value={form.minStock} 
+                  onChangeText={(t: string) => setForm({...form, minStock: Number(t)})} 
                 />
               </View>
             </View>
@@ -528,6 +570,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
           suppliers: columns[6]?.trim() || 'Supplier',
           buyingPrice: Number("2000"),
           totalCost: 0,
+          minStock: 5,
           batchNumber: `BATCH-${Date.now()}`
         });
       }
@@ -539,6 +582,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
         category: 'Electronics',
         buyingPrice: Number("2500"),
         unit: 'pcs',
+        minStock: 5,
         quantity: 50,
         sellingPrice: 99.99,
         targetMax: null,
@@ -555,6 +599,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
         category: 'Fashion',
         unit: 'pcs',
         quantity: 100,
+        minStock: 5,
         buyingPrice: Number("5000"),
         totalCost: 0,
         sellingPrice: 49.99,
@@ -652,3 +697,237 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
     </Modal>
   );
 };
+
+
+
+function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boolean; stock: FetchStock | null; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState<StockInput>({
+    productName: '',
+    category: '',
+    unit: '',
+    qrCode: '',
+    location: 'Main Store',
+    expiryDate: '',
+    suppliers: '',
+    batchNumber: '',
+    targetMax: 0,
+    status: 'in-stock',
+    quantity: 0,
+    sellingPrice: 0,
+    buyingPrice: 0,
+    totalCost: 0,
+    minStock: 5,
+  });
+
+  useEffect(() => {
+  if (stock) {
+    setForm({
+      productName: stock.productName ?? '',
+      category: stock.category ?? '',
+      unit: stock.unit ?? '',
+      qrCode: stock.qrCode ?? '',
+      location: stock.location ?? 'Main Store',
+      expiryDate: stock.expiryDate ?? '',
+      suppliers: stock.suppliers ?? '',
+      batchNumber: stock.batchNumber ?? '',
+      targetMax: stock.targetMax ?? 0,
+      status: stock.status ?? 'in-stock',
+      quantity: stock.quantity ?? 0,
+      sellingPrice: stock.sellingPrice ?? 0,
+      buyingPrice: stock.buyingPrice ?? 0,
+      totalCost: stock.totalCost ?? 0,
+      minStock: stock.minStock ?? 5,
+    });
+  }
+}, [stock]);
+
+  const handleEditSubmit = (id: number) => {
+    // Basic validation for Critical fields
+    if (!form.productName || !form.quantity || !form.sellingPrice || !form.buyingPrice || !form.minStock) {
+      Alert.alert(
+        "Missing information",
+        "Please fill in all required fields with * before saving.",
+        [{ text: "OK" }]
+      );
+
+      return;
+    }
+
+    updateStock(id, {
+      ...form,
+      quantity: Number(form.quantity),
+      sellingPrice: Number(form.sellingPrice),
+      targetMax: form.targetMax ? Number(form.targetMax) : null,
+      suppliers: form.suppliers,
+      batchNumber: generateStockBatch(form.suppliers?.split(",")[0])
+    })
+    onSuccess(); // trigger refetch
+    onClose();
+  };
+
+  const InputField = ({ label, value, onChangeText, placeholder, icon: Icon, critical = false, keyboardType = "default" }: any) => (
+    <View className="mb-4">
+      <View className="flex-row items-center mb-1">
+        <Text className="text-slate-600 font-bold text-xs uppercase tracking-widest">{label}</Text>
+        {critical && <Text className="text-red-500 ml-1">*</Text>}
+      </View>
+      <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+        {Icon && <Icon size={16} color="#94a3b8" className="mr-2" />}
+        <TextInput
+          className="flex-1 text-slate-900 font-medium"
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          placeholderTextColor="#cbd5e1"
+        />
+      </View>
+    </View>
+  );
+
+  return <>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View className="flex-1 bg-black/60 justify-end">
+        <View className="bg-white rounded-t-[40px] h-[90%] p-6 shadow-2xl">
+          
+          {/* Header */}
+          <View className="flex-row justify-between items-center mb-6">
+            <Text className="text-2xl font-black text-slate-900">Edit Stock</Text>
+            <Pressable onPress={onClose} className="bg-slate-100 p-2 rounded-full">
+               <Text className="text-slate-500 font-bold px-2">X</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+            
+            {/* 1. Critical Info Section */}
+            <Text className="text-blue-600 font-black text-[10px] uppercase mb-3 tracking-tighter">Critical Information</Text>
+            <InputField 
+              label="Product Name" 
+              critical 
+              placeholder="e.g. Azam Juice" 
+              value={form.productName} 
+              onChangeText={(t: string) => setForm({...form, productName: t})} 
+            />
+            
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <InputField 
+                  label="Quantity" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="0" 
+                  value={form.quantity.toLocaleString()} 
+                  onChangeText={(t: string) => setForm({...form, quantity: Number(t)})} 
+                />
+              </View>
+              <View className="flex-1">
+                <InputField 
+                  label="Selling Price (TZS)" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="500" 
+                  value={form.sellingPrice.toLocaleString()} 
+                  onChangeText={(t: string) => setForm({...form, sellingPrice: Number(t)})} 
+                />
+              </View>
+            </View>
+
+            <View className='flex-row gap-3'>
+              <View className="flex-1">
+                <InputField 
+                  label="Buying Price (TZS)" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="200" 
+                  value={form.buyingPrice.toLocaleString()} 
+                  onChangeText={(t: string) => setForm({...form, buyingPrice: Number(t)})} 
+                />
+              </View>
+
+              <View className="flex-1">
+                <InputField 
+                  label="Minimum stock" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="5"
+                  value={form.minStock.toLocaleString()} 
+                  onChangeText={(t: string) => setForm({...form, minStock: Number(t)})} 
+                />
+              </View>
+            </View>
+
+              <View className="flex-1">
+                <InputField 
+                  label="Transport & other costs (TZS)" 
+                  critical 
+                  keyboardType="numeric" 
+                  placeholder="0"
+                  value={form.totalCost.toLocaleString()} 
+                  onChangeText={(t: string) => setForm({...form, totalCost: Number(t)})} 
+                />
+              </View>
+
+
+            {/* 2. Warehouse & Logistic Section */}
+            <Text className="text-blue-600 font-black text-[10px] uppercase mt-4 mb-3 tracking-tighter">Warehouse & Logistics</Text>
+            <InputField 
+              label="Location / Shop" 
+              icon={MapPin} 
+              placeholder="Main Store" 
+              value={form.location} 
+              onChangeText={(t: string) => setForm({...form, location: t})} 
+            />
+
+            <InputField 
+              label="Supplier Names" 
+              icon={Truck} 
+              placeholder="Separated by comma (e.g. Azam, Mo)" 
+              value={form.suppliers} 
+              onChangeText={(t: string) => setForm({...form, suppliers: t})} 
+            />
+
+            {/* 3. Optional Metadata */}
+            <Text className="text-blue-600 font-black text-[10px] uppercase mt-4 mb-3 tracking-tighter">Additional Details (Optional)</Text>
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <InputField label="Category" placeholder="e.g. Drinks" value={form.category} onChangeText={(t: string) => setForm({...form, category: t})} />
+              </View>
+              <View className="flex-1">
+                <InputField label="Unit" placeholder="e.g. kg, pcs" value={form.unit} onChangeText={(t: string) => setForm({...form, unit: t})} />
+              </View>
+            </View>
+            <InputField label="QR/Bar Code" icon={Hash} placeholder="Scan or type code" value={form.qrCode} onChangeText={(t: string) => setForm({...form, qrCode: t})} />
+            <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} />
+            <InputField label="Target Max Stock" icon={Target} keyboardType="numeric" placeholder="1000" value={form.targetMax?.toLocaleString()} onChangeText={(t: string) => setForm({...form, targetMax: Number(t)})} />
+
+          </ScrollView>
+
+          {/* Action Buttons */}
+          <View className="pt-3 flex-row gap-3 bg-white">
+            {/* CANCEL BUTTON */}
+            <Pressable 
+              onPress={onClose} 
+              className="flex-1 bg-slate-100 py-4 rounded-2xl items-center flex-row justify-center border border-slate-200"
+            >
+              <X size={18} color="#475569" />
+              <Text className="font-bold text-slate-600 ml-1">Cancel</Text>
+            </Pressable>
+
+            {/* SAVE BUTTON - The Primary Action */}
+            <Pressable 
+              onPress={() => handleEditSubmit(stock ? Number(stock.id) : 0)} 
+              className="flex-[2] bg-emerald-600 py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-200"
+            >
+              <Ionicons name="save" size={20} color="white" />
+              <Text className="font-bold text-white ml-2 text-lg">Save Product</Text>
+            </Pressable>
+          </View>
+
+        </View>
+      </View>
+    </Modal>
+
+  </>
+}
+
