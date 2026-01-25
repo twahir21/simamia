@@ -108,7 +108,6 @@ export default function ScanScreen() {
     if (scanned) return;
     setScanned(true);
 
-    // TODO: Replace this with your actual product lookup logic
     const productId = checkIfProductExists(data);
 
     if (productId) {

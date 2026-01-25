@@ -30,10 +30,16 @@ export default function Stock() {
     const [STOCKS, setStocks] = useState<FetchStock[]>([]);
     const [editingStock, setEditingStock] = useState<FetchStock | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [analysis, setAnalysis] = useState({
+      totalItems: 0,
+      lowStock: 0,
+      outOfStock: 0,
+    });
 
     useEffect(() => {
       const data = fetchAllStock();
       setStocks(data);
+      setAnalysis(stockAnalysis())
     }, [refreshKey]);
 
     const refreshStocks = () => {
@@ -206,9 +212,9 @@ export default function Stock() {
       {/* Horizontal Analytics Card */}
       <View className="pb-3 border-b border-b-gray-400">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4">
-          <AnalyticsCard title="Total Items" count={stockAnalysis().totalItems ?? 0} icon={<Package size={20} color="#6366f1"/>} color="bg-indigo-50" border="border border-purple-300" />
-          <AnalyticsCard title="Low Stocks" count={stockAnalysis().lowStock} icon={<AlertTriangle size={20} color="#f59e0b"/>} color="bg-amber-50" border="border border-yellow-400"/>
-          <AnalyticsCard title="Out of Stock" count={stockAnalysis().outOfStock} icon={<XCircle size={20} color="#ef4444"/>} color="bg-red-50" border="border border-red-300"/>
+          <AnalyticsCard title="Total Items" count={analysis.totalItems ?? 0} icon={<Package size={20} color="#6366f1"/>} color="bg-indigo-50" border="border border-purple-300" />
+          <AnalyticsCard title="Low Stocks" count={analysis.lowStock} icon={<AlertTriangle size={20} color="#f59e0b"/>} color="bg-amber-50" border="border border-yellow-400"/>
+          <AnalyticsCard title="Out of Stock" count={analysis.outOfStock} icon={<XCircle size={20} color="#ef4444"/>} color="bg-red-50" border="border border-red-300"/>
         </ScrollView>
       </View>
 
