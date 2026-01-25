@@ -3,6 +3,8 @@ import { useAudioPlayer } from "expo-audio";
 import { useState, useRef } from "react";
 import { Text, View, TouchableOpacity, Animated } from "react-native";
 import * as Haptics from 'expo-haptics';
+import { addToCart, checkIfProductExists } from "@/db/stock.sqlite";
+import { useCartStore } from "@/store/cart";
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -10,6 +12,10 @@ export default function ScanScreen() {
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanResult, setScanResult] = useState<null | "success" | "error">(null);
   const [flashColor, setFlashColor] = useState("rgba(0, 255, 0, 0.3)"); // default green
+
+  // store
+  const addItem = useCartStore(state => state.addItem);
+
   
   // Animation value for the green flash
   const flashAnim = useRef(new Animated.Value(0)).current;
@@ -44,7 +50,7 @@ export default function ScanScreen() {
           activeOpacity={0.8}
           className="bg-sky-500 px-8 py-4 rounded-xl w-full max-w-xs items-center shadow-lg shadow-blue-500/20"
         >
-          <Text className="text-white font-semibold text-lg">Allow Camera Access</Text>
+          <Text className="text-white font-semibold text-lg">Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
@@ -97,14 +103,15 @@ export default function ScanScreen() {
   };
 
 
+
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     if (scanned) return;
     setScanned(true);
 
     // TODO: Replace this with your actual product lookup logic
-    const isProductFound = checkIfProductExists(data); // Your function here
+    const productId = checkIfProductExists(data);
 
-    if (isProductFound) {
+    if (productId) {
       // SUCCESS: Product found
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
@@ -118,9 +125,21 @@ export default function ScanScreen() {
       setScanResult("success")
       triggerSuccessFlash();
       
-      // TODO: Add product to cart with quantity = 1
-      console.log("✅ Product found:", data);
-      // addToCart(data, 1);
+      //
+      const stockFromDb = addToCart(productId);
+      console.log("✅ Product found and Cart list: ", stockFromDb);
+
+
+      if (stockFromDb) {
+        addItem({
+          stockId: stockFromDb.id,
+          name: stockFromDb.productName,
+          price: stockFromDb.sellingPrice,
+          qty: 1
+        })
+      }
+
+      console.log("Added to cart")
       
       // Auto-reset for continuous scanning
       setTimeout(() => setScanSuccess(false), 500);
@@ -148,15 +167,6 @@ export default function ScanScreen() {
       
     }
   };
-
-  // Dummy function - replace with your actual logic
-  const checkIfProductExists = (barcode: string): boolean => {
-    // This should check your product database
-    // For now, return true for demo purposes
-    return barcode.length > 5; 
-    // return false;
-  };
-
 
   return (
     <View className="flex-1">
@@ -217,7 +227,7 @@ export default function ScanScreen() {
                 className="px-4 py-2 bg-red-500/90 rounded"
                 onPress={() => setScanned(false)}
               >
-                <Text className="text-white font-semibold">Product not found, scan Again</Text>
+                <Text className="text-white font-semibold">Product not found, Tap to Scan Again</Text>
               </TouchableOpacity>
             </View>
           )}

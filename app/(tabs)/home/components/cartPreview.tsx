@@ -1,62 +1,57 @@
+import { useCartStore } from "@/store/cart";
 import { Feather } from "@expo/vector-icons";
 import { FlatList, Pressable, Text, View } from "react-native";
 
-const HARD_CODED_STOCK_TOTAL = 12;
+// const HARD_CODED_CART = [
+//   { id: "1", name: "Coca Cola 500ml", price: 1000, qty: 2 },
+//   { id: "2", name: "Pepsi 500ml", price: 900, qty: 1 },
+//   { id: "3", name: "Sprite 500ml", price: 1000, qty: 3 },
+//   { id: "4", name: "Ngano", price: 700, qty: 2 },
+//   { id: "5", name: "Blackcoder 1500ml", price: 5000, qty: 6 },
 
-const HARD_CODED_CART = [
-  { id: "1", name: "Coca Cola 500ml", price: 1000, qty: 2 },
-  { id: "2", name: "Pepsi 500ml", price: 900, qty: 1 },
-  { id: "3", name: "Sprite 500ml", price: 1000, qty: 3 },
-  { id: "4", name: "Ngano", price: 700, qty: 2 },
-  { id: "5", name: "Cocacola 1500ml", price: 5000, qty: 6 },
+// ];
 
-];
+  // const cart = HARD_CODED_CART;
 
-  const cart = HARD_CODED_CART;
+
+
+export default function CartPreview () {
+
+  const cart = useCartStore(state => state.items);
+
+  console.log("Cart in preview: ", cart)
 
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.qty,
     0
   );
 
-
-export default function CartPreview () {
     return <>
     {/* MINI CART */}
       <View className="bg-white rounded-xl border border-gray-400 mx-4 my-2 px-3 py-2">
         {/* Compact meta row */}
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-xs text-gray-600">
-            Stock left:{" "}
-            <Text className="font-semibold text-gray-800">
-              {HARD_CODED_STOCK_TOTAL}
-            </Text>
+        <Text className="text-xs text-gray-600">
+          Items:{" "}
+          <Text className="font-semibold text-gray-800">
+            {cart.length}
           </Text>
-
-          <Text className="text-xs text-gray-600">
-            Items:{" "}
-            <Text className="font-semibold text-gray-800">
-              {cart.length}
-            </Text>
-          </Text>
-        </View>
+        </Text>
 
         {/* Items list */}
         <View style={{ height: 70 }}> 
         {/* 3 items × 60px height each = 180px */}
         <FlatList
             data={cart}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.stockId.toString()}
             showsVerticalScrollIndicator={false}
             renderItem={({ item, index }) => {
-            const isLast = index === cart.length - 1;
+            const isLast = index === cart.length - item.qty;
 
             return (
                 <View
                 className={`flex-row justify-between items-center px-2 py-2 rounded-md ${
                     isLast ? "bg-green-50 border border-green-200" : ""
                 }`}
-                style={{ height: 30 }} // fixed row height
                 >
                 {/* Left side: index + name */}
                 <View className="flex-row items-center gap-1 flex-1">

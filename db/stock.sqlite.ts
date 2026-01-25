@@ -1,4 +1,4 @@
-import { FetchStock, StockInput } from '@/types/stock.types';
+import { CartStockRow, FetchStock, StockInput } from '@/types/stock.types';
 import * as SQLite from 'expo-sqlite';
 
 // Open (or create) the database file
@@ -86,6 +86,23 @@ export const searchStock = (query: string) => {
   );
 };
 
+
+export const checkIfProductExists = (barcode: string): number | null => {
+  const result = db.getFirstSync<{ id: number }>(
+    `SELECT id FROM stock WHERE qrCode = ? LIMIT 1`,
+    [barcode]
+  );
+
+  return result ? result.id : null;
+};
+
+
+export const addToCart = (id: number): CartStockRow | null => {
+  return db.getFirstSync<CartStockRow>(`
+      SELECT id, productName, sellingPrice FROM stock
+      WHERE id = ? LIMIT 1
+  `, [id]);
+}
 
 export const updateStock = (id: number, data: Partial<StockInput>) => {
   db.runSync(

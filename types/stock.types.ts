@@ -20,3 +20,24 @@ export interface FetchStock extends StockInput {
     id: string;
     lastUpdate: string;
 }
+
+export type CartStockRow = {
+  id: number;
+  productName: string;
+  sellingPrice: number;
+};
+
+export type CartItem = {
+  stockId: number;
+  name: string;
+  price: number;
+  qty: number;
+};
+
+
+export type CartState = {
+  items: CartItem[];
+  addItem: (item: CartItem) => void;
+  removeItem: (stockId: number) => void;
+  clearCart: () => void;
+};

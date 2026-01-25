@@ -4,12 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 
 export default function App() {
-//  useEffect(() => { 
-//     NavigationBar.setVisibilityAsync("visible"); 
-//     NavigationBar.setBehaviorAsync("inset-swipe"); // disables edge-to-edge 
-//     NavigationBar.setBackgroundColorAsync("#000000"); 
-//     NavigationBar.setButtonStyleAsync("light"); 
-//   }, []);
 
   return <>
   <ScrollView className="bg-white">
