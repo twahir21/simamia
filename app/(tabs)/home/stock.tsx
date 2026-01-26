@@ -233,6 +233,11 @@ export default function Stock() {
             value={query}
             onChangeText={setQuery}
           />
+          {query.length > 0 && (
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setQuery("");}}>
+              <Text className="text-sky-500 font-medium">Cancel</Text>
+              </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -276,9 +281,8 @@ export default function Stock() {
       {/* Floating Add Button */}
       <Pressable
         onPress={() => setShowAddModal(true)}
-        onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setQuery(""); }}
         android_ripple={{ color: "rgba(255,255,255,0.2)" }}
-        className="absolute top-3 right-3 bg-sky-800 w-16 h-16 rounded-full items-center justify-center shadow-lg"
+        className="absolute bottom-12 right-3 bg-sky-800 w-16 h-16 rounded-full items-center justify-center shadow-lg"
       >
         <Plus size={28} color="white" />
       </Pressable>

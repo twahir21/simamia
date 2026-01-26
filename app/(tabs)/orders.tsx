@@ -14,6 +14,7 @@ import { Entypo, FontAwesome, Fontisto, Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
 import { orders } from '@/const/orders';
 import { BottomActions } from './home/components/ui/Actions';
+import { PhoneCall } from 'lucide-react-native';
 // types/order.ts
 export type DeliveryStatus = 'pending' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
@@ -380,7 +381,7 @@ const Orders = () => {
                   className="flex-1 py-4 items-center border-r border-sky-500"
                   onPress={() => callCustomer(order.phone)}
                 >
-                  <Text className="text-blue-600 font-semibold">📞 Call</Text>
+                  <Text className="text-blue-600 font-semibold"><PhoneCall size={18} color="#10B981" /> Call</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   className="flex-1 py-4 items-center"
