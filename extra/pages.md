@@ -8,25 +8,6 @@ Your MVP should have **5 screens only**. Anything more is ego, not business.
 
 ---
 
-### **1️⃣ Home / Today Screen (MOST IMPORTANT)**
-
-This is what convinces them to pay.
-
-**Shows:**
-
-* Today’s sales total
-* Today’s profit
-* Outstanding debts (total)
-* Stock alerts (low items)
-
-**Actions (big buttons):**
-
-* ➕ New Sale
-* 📦 Stock
-* 👥 Debts
-
-If this screen is not **clear in 5 seconds**, your app fails.
-
 ---
 
 ### **2️⃣ New Sale Screen**
@@ -42,6 +23,7 @@ Must be **fast**, no typing nonsense.
 
   * Cash
   * Debt (name + phone optional)
+  * Mobile payment e.g. Lipa, mpesa etc
 
 **Button:**
 
