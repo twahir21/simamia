@@ -6,6 +6,7 @@ import { deleteStock, fetchAllStock, saveStock, searchStock, stockAnalysis, upda
 import { FetchStock, StockInput } from '@/types/stock.types';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Haptics from 'expo-haptics';
 
 const generateStockBatch = (supplierName?: string): string => {
   // 1. Get first 15 letters of supplier (uppercase)
@@ -275,6 +276,7 @@ export default function Stock() {
       {/* Floating Add Button */}
       <Pressable
         onPress={() => setShowAddModal(true)}
+        onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setQuery(""); }}
         android_ripple={{ color: "rgba(255,255,255,0.2)" }}
         className="absolute top-3 right-3 bg-sky-800 w-16 h-16 rounded-full items-center justify-center shadow-lg"
       >
