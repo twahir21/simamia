@@ -12,9 +12,12 @@ import {
   TextInput as RNTextInput,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
+  Pressable,
+  Modal,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { AntDesign, Entypo, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { AntDesign, Entypo, Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
+import { PackageSearch } from 'lucide-react-native';
 
 // Types
 interface Product {
@@ -60,10 +63,15 @@ const SmartSearch: React.FC = () => {
   const [suggestions, setSuggestions] = useState<ScoredProduct[]>([]);
   const [recentSearches, setRecentSearches] = useState<Product[]>([
     MOCK_PRODUCTS[0], // Coca Cola
-    MOCK_PRODUCTS[2], // Azam Juice Mango
-    MOCK_PRODUCTS[5], // Dell Laptop
-    MOCK_PRODUCTS[6], // iPhone
+    MOCK_PRODUCTS[1], // Azam Juice Mango
+    MOCK_PRODUCTS[2], // Dell Laptop
+    MOCK_PRODUCTS[3], // iPhone
+    MOCK_PRODUCTS[4], // Nike Shoes
+    MOCK_PRODUCTS[5],
+    MOCK_PRODUCTS[6],
+    MOCK_PRODUCTS[7],
     MOCK_PRODUCTS[8], // Nike Shoes
+    MOCK_PRODUCTS[9],
   ]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [isAdding, setIsAdding] = useState<boolean>(false);
@@ -76,12 +84,13 @@ const SmartSearch: React.FC = () => {
   
   // Auto focus on mount
   useEffect(() => {
-    const timer = setTimeout(() => {
+  if (showSuggestions) {
+    requestAnimationFrame(() => {
       inputRef.current?.focus();
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    });
+  }
+}, [showSuggestions]);
+
   
   // Typo tolerance helper function
   const getTypoToleranceScore = (query: string, text: string): number => {
@@ -253,7 +262,7 @@ const SmartSearch: React.FC = () => {
     // Update recent searches
     setRecentSearches(prev => {
       const filtered = prev.filter(p => p.id !== product.id);
-      return [product, ...filtered.slice(0, 14)]; // Keep 15 items max
+      return [product, ...filtered.slice(0, 9)]; // Keep 10 items max
     });
     
     // Show feedback
@@ -296,15 +305,16 @@ const SmartSearch: React.FC = () => {
   // Render suggestion item
   const renderSuggestion: ListRenderItem<ScoredProduct> = ({ item }) => {
     const highlightedParts = getHighlightedText(item.name, searchQuery);
+    console.log("sugg: ", suggestions.length)
     
     return (
-      <TouchableOpacity
+      <Pressable
         onPress={() => addToCart(item)}
-        className="px-4 py-3 border-b border-gray-100 active:bg-gray-50 flex-row items-center justify-between"
+        className="px-4 py-3 border-b border-gray-400 active:bg-gray-50 flex-row items-center justify-between"
       >
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Feather name="search" size={16} color="#6b7280" className="mr-3" />
+            <FontAwesome6 name="cart-plus" size={16} color="#6b7280" className="mr-3 pt-2" />
             <Text className="text-gray-800">
               {highlightedParts.map((part, index) => (
                 <Text
@@ -319,41 +329,41 @@ const SmartSearch: React.FC = () => {
           <Text className="text-gray-500 text-xs ml-7 mt-1">{item.category}</Text>
         </View>
         <Text className="text-green-600 font-semibold">${item.price}</Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
   
   // Render recent search item
-const renderRecentItem = (item: Product, index: number) => (
-  <TouchableOpacity
-    key={item.id}
-    onPress={() => {
-      setSearchQuery(item.name);
-      const results = searchProducts(item.name);
-      setSuggestions(results);
-      setShowSuggestions(true);
-    }}
-    className="w-1/2 pr-2 mb-2"
-    activeOpacity={0.7}
-  >
-    <View className="bg-sky-50 border border-gray-300 rounded-full px-4 py-2 flex-row items-center">
-      <AntDesign
-        name="clock-circle"
-        size={14}
-        color="#6b7280"
-        style={{ marginRight: 6 }}
-      />
+  const renderRecentItem = (item: Product, index: number) => (
+    <TouchableOpacity
+      key={item.id}
+      onPress={() => {
+        setSearchQuery(item.name);
+        const results = searchProducts(item.name);
+        setSuggestions(results);
+        setShowSuggestions(true);
+      }}
+      className="w-1/2 pr-2 mb-2"
+      activeOpacity={0.7}
+    >
+      <View className="bg-sky-50 border border-gray-300 rounded-full px-4 py-2 flex-row items-center">
+        <AntDesign
+          name="clock-circle"
+          size={14}
+          color="#6b7280"
+          style={{ marginRight: 6 }}
+        />
 
-      <Text
-        className="text-gray-700 flex-1"
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        {item.name}
-      </Text>
-    </View>
-  </TouchableOpacity>
-);
+        <Text
+          className="text-gray-700 flex-1"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.name}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
 
   return (
@@ -374,7 +384,7 @@ const renderRecentItem = (item: Product, index: number) => (
       )}
       
       {/* Search Bar */}
-      <View className="relative mb-6">
+      <View className="relative mb-6 z-40">
         <View className="flex-row items-center bg-gray-100 rounded-2xl px-4 py-1 border border-gray-400">
           <Feather name="search" size={20} color="#9ca3af" />
           <TextInput
@@ -399,22 +409,50 @@ const renderRecentItem = (item: Product, index: number) => (
         </View>
         
         {/* Suggestions Dropdown */}
-        {showSuggestions && suggestions.length > 0 && (
-          <View className="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-xl border border-gray-400 max-h-80 z-40">
-            <FlatList
-              data={suggestions}
-              renderItem={renderSuggestion}
-              keyExtractor={(item) => item.id.toString()}
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled
+        {showSuggestions && (
+          <Modal
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowSuggestions(false)}
+          >
+            {/* Backdrop */}
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => setShowSuggestions(false)}
             />
-            
-            <View className="px-4 py-2 border-t border-gray-300 bg-gray-100">
-              <Text className="text-gray-500 text-xs">
-                Press Enter to add the first result • {suggestions.length} results
-              </Text>
+        
+            {/* Dropdown */}
+            <View style={styles.dropdown}>
+              {suggestions.length === 0 ? (
+                <View className="flex-1 items-center justify-center px-6">
+                  <PackageSearch size={48} color="#cbd5e1" />
+
+                  <Text className="text-gray-500 mt-3 text-sm">
+                    No item found
+                  </Text>
+                  <Text className="text-gray-400 text-xs mt-1 text-center">
+                    We couldn&apos;t find any products. Try a different keyword
+                  </Text>
+                </View>
+              ) : (
+                <>
+                <FlatList
+                  data={suggestions}
+                  renderItem={renderSuggestion}
+                  keyExtractor={(item) => item.id.toString()}
+                  keyboardShouldPersistTaps="always"
+                  showsVerticalScrollIndicator
+                />
+        
+                <View className="px-4 py-2 border-t border-gray-300 bg-gray-100">
+                  <Text className="text-gray-500 text-xs">
+                    Press Enter to add the first result • {suggestions.length} results
+                  </Text>
+                </View>
+              </>
+              )}
             </View>
-          </View>
+          </Modal>
         )}
       </View>
       
@@ -426,7 +464,7 @@ const renderRecentItem = (item: Product, index: number) => (
               <MaterialCommunityIcons name="cart-variant" size={20} color="#4b5563" className="mr-2" />
               <Text className="text-gray-700 font-semibold text-lg">Recently Added Products</Text>
             </View>
-            <Text className="text-gray-500 text-sm">{recentSearches.length}/15</Text>
+            <Text className="text-gray-500 text-sm">{recentSearches.length}/10</Text>
           </View>
           
           <View className="flex-row flex-wrap">
@@ -455,6 +493,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdown: {
+    position: "absolute",
+    top: 150, // adjust to sit below search bar
+    left: 16,
+    right: 16,
+    height: 320, // REAL HEIGHT → scrolling works
+    backgroundColor: "white",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
     elevation: 5,
   },
 });
