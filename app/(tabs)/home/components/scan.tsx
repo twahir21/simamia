@@ -126,8 +126,6 @@ export default function ScanScreen() {
       
       //
       const stockFromDb = addToCart(productId);
-      console.log("✅ Product found and Cart list: ", stockFromDb);
-
 
       if (stockFromDb) {
         addItem({
@@ -137,8 +135,6 @@ export default function ScanScreen() {
           qty: 1
         })
       }
-
-      console.log("Added to cart")
       
       // Auto-reset for continuous scanning
       setTimeout(() => setScanSuccess(false), 500);
@@ -156,14 +152,8 @@ export default function ScanScreen() {
         errorBeep.play();
       }
       
-      // Optional: Red flash for error
-      triggerErrorFlash();
-      
-      console.log("❌ Product not found:", data);
-      // Show error message
-      // alert("Product not found");
-      // setTimeout(() => setScanResult(null), 1000)
-      
+      // Red flash for error
+      triggerErrorFlash();      
     }
   };
 
@@ -224,7 +214,7 @@ export default function ScanScreen() {
             <View className="mt-2 items-center">
               <TouchableOpacity
                 className="px-4 py-2 bg-red-500/90 rounded"
-                onPress={() => setScanned(false)}
+                onPress={() => { setScanned(false); setScanResult(null)}}
               >
                 <Text className="text-white font-semibold">Product not found, Tap to Scan Again</Text>
               </TouchableOpacity>

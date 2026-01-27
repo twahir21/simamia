@@ -12,48 +12,26 @@ export default function CartPreview() {
 
   if (cart.length === 0) {
     return (
-      <View>
-        {/* MINI CART - Empty State */}
-        <View className="bg-white rounded-xl border border-gray-300 mx-4 my-2 px-3 py-4">
-          <View className="flex-1 justify-center items-center py-6">
-            <Feather name="shopping-cart" size={32} color="#9CA3AF" />
-            <Text className="text-gray-500 text-sm mt-2">
-              Your cart is empty
+      <View className="px-4 py-2 bg-white">
+        <View className="flex-row gap-3">
+          <Pressable
+            className="flex-1 border border-gray-300 bg-gray-50 rounded-xl py-4"
+            disabled={true}
+          >
+            <Text className="text-center font-semibold text-gray-400">
+              VIEW CART
             </Text>
-            <Text className="text-gray-400 text-xs mt-1">
-              Add items to get started
+          </Pressable>
+
+          <Pressable
+            className="flex-1 bg-gray-300 rounded-xl py-4 flex-row items-center justify-center gap-2"
+            disabled={true}
+          >
+            <Feather name="save" size={14} color="#9CA3AF" />
+            <Text className="text-center text-gray-500 font-bold">
+              SAVE SALES
             </Text>
-          </View>
-          
-          {/* Subtotal */}
-          <View className="flex-row justify-between items-center pt-3 border-t border-gray-300">
-            <Text className="text-xs font-medium text-gray-600">Subtotal</Text>
-            <Text className="text-sm font-bold text-gray-900">0</Text>
-          </View>
-        </View>
-
-        {/* Bottom Actions - Disabled */}
-        <View className="px-4 py-2 bg-white">
-          <View className="flex-row gap-3">
-            <Pressable
-              className="flex-1 border border-gray-300 bg-gray-50 rounded-xl py-4"
-              disabled={true}
-            >
-              <Text className="text-center font-semibold text-gray-400">
-                VIEW CART
-              </Text>
-            </Pressable>
-
-            <Pressable
-              className="flex-1 bg-gray-300 rounded-xl py-4 flex-row items-center justify-center gap-2"
-              disabled={true}
-            >
-              <Feather name="save" size={14} color="#9CA3AF" />
-              <Text className="text-center text-gray-500 font-bold">
-                SAVE SALES
-              </Text>
-            </Pressable>
-          </View>
+          </Pressable>
         </View>
       </View>
     );
