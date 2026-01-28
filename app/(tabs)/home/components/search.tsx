@@ -14,6 +14,7 @@ import {
   TextInputKeyPressEventData,
   Pressable,
   Modal,
+  ActivityIndicator
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -90,12 +91,16 @@ const SmartSearch: React.FC = () => {
       // Load recent searches from AsyncStorage
       const recentSearchesJson = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
       if (recentSearchesJson) {
-        const recent = JSON.parse(recentSearchesJson) as Product[];
-        // Filter out any products that no longer exist in our database
-        const validRecent = recent.filter(recentProduct => 
-          transformedProducts.some(p => p.id === recentProduct.id)
-        );
-        setRecentSearches(validRecent);
+        const oldRecent = JSON.parse(recentSearchesJson) as Product[];
+
+        const refreshedRecent: Product[] = oldRecent
+        .map(old => {
+          const fresh = transformedProducts.find(p => p.id === old.id);
+          return fresh ? { ...fresh } : null;
+        })
+        .filter(Boolean) as Product[];
+
+        setRecentSearches(refreshedRecent);
       }
     } catch (error) {
       console.error('Error loading products or recent searches:', error);
@@ -113,15 +118,6 @@ const SmartSearch: React.FC = () => {
     }
   };
 
-  // Find product in the database by ID
-  const findProductById = (id: number): Product | undefined => {
-    return products.find(p => p.id === id);
-  };
-
-  // Find product in the database by name (for recent searches)
-  const findProductByName = (name: string): Product | undefined => {
-    return products.find(p => p.name.toLowerCase() === name.toLowerCase());
-  };
   
   // Typo tolerance helper function
   const getTypoToleranceScore = (query: string, text: string): number => {
@@ -246,6 +242,9 @@ const SmartSearch: React.FC = () => {
       
       // Penalty for very long names
       if (product.name.length > 30) score -= 5;
+
+      // favour frequent sold products
+      // e.g. if (product.salesCount > 100) score += 20;
       
       return { ...product, score };
     });
@@ -412,7 +411,7 @@ const SmartSearch: React.FC = () => {
       {/* Remove button for recent searches */}
       <TouchableOpacity
         onPress={() => removeRecentSearch(item.id)}
-        className="absolute top-1 right-3 p-1"
+        className="absolute top-2 right-4 p-1"
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Entypo name="cross" size={14} color="#9ca3af" />
@@ -511,9 +510,10 @@ const SmartSearch: React.FC = () => {
       
       {/* Loading State */}
       {isLoading && !showSuggestions && (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-500">Loading products...</Text>
-        </View>
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color="#075985" />
+        <Text className="text-slate-500 mt-2 font-medium">Loading Products...</Text>
+      </View>
       )}
       
       {/* Recent Searches */}
@@ -525,11 +525,21 @@ const SmartSearch: React.FC = () => {
               <Text className="text-gray-700 font-semibold text-lg">Recently Added Products</Text>
             </View>
             <View className="flex-row items-center">
-              <Text className="text-gray-500 text-sm mr-2">{recentSearches.length}/{MAX_RECENT_SEARCHES}</Text>
+              <Text className="text-gray-500 text-sm mr-3">{recentSearches.length}/{MAX_RECENT_SEARCHES}</Text>
               {recentSearches.length > 0 && (
-                <TouchableOpacity onPress={clearRecentSearches} className="p-1">
-                  <Text className="text-red-500 text-xs">Clear All</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                onPress={clearRecentSearches}
+                className="flex-row items-center px-2 py-1 rounded-full bg-red-50 border border-red-300"
+              >
+                <MaterialCommunityIcons
+                  name="trash-can-outline"
+                  size={14}
+                  color="#dc2626"
+                />
+                <Text className="text-red-600 text-xs ml-1 font-medium">
+                  Clear
+                </Text>
+              </TouchableOpacity>
               )}
             </View>
           </View>
@@ -557,7 +567,7 @@ const SmartSearch: React.FC = () => {
           )}
           
           {/* Product Count Info */}
-          <View className="mt-6 pt-4 border-t border-gray-200">
+          <View className="mt-3 pt-2 border-t border-gray-300">
             <Text className="text-gray-500 text-sm text-center">
               {products.length} products available in inventory
             </Text>
@@ -579,7 +589,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     position: "absolute",
-    top: 150, // adjust to sit below search bar
+    top: 178, // adjust to sit below search bar
     left: 16,
     right: 16,
     height: 320, // REAL HEIGHT → scrolling works
