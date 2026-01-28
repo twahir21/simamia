@@ -15,9 +15,11 @@ import {
   Pressable,
   Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import { AntDesign, Entypo, Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
+import { AntDesign, Entypo, Feather, FontAwesome6, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
 import { PackageSearch } from 'lucide-react-native';
+import { fetchAllStock } from '@/db/stock.sqlite';
 
 // Types
 interface Product {
@@ -33,64 +35,93 @@ interface ScoredProduct extends Product {
   matchedIndices?: [number, number][];
 }
 
-// Mock product data
-const MOCK_PRODUCTS: Product[] = [
-  { id: 1, name: 'Coca Cola 500ml', category: 'Beverages', price: 1.5 },
-  { id: 2, name: 'Pepsi 330ml Can', category: 'Beverages', price: 1.2 },
-  { id: 3, name: 'Azam Juice Mango 1L', category: 'Juices', price: 2.5 },
-  { id: 4, name: 'Azam Juice Orange 1L', category: 'Juices', price: 2.5 },
-  { id: 5, name: 'Mounto Spring Water 1.5L', category: 'Water', price: 0.8 },
-  { id: 6, name: 'Dell Latitude Laptop', category: 'Electronics', price: 899 },
-  { id: 7, name: 'iPhone 15 Pro Max', category: 'Electronics', price: 1299 },
-  { id: 8, name: 'Samsung Galaxy S24', category: 'Electronics', price: 799 },
-  { id: 9, name: 'Nike Air Max 270', category: 'Shoes', price: 150 },
-  { id: 10, name: 'Adidas Ultraboost', category: 'Shoes', price: 180 },
-  { id: 11, name: 'MacBook Pro 14"', category: 'Electronics', price: 1999 },
-  { id: 12, name: 'Sony WH-1000XM5', category: 'Headphones', price: 399 },
-  { id: 13, name: 'Apple AirPods Pro', category: 'Headphones', price: 249 },
-  { id: 14, name: 'Logitech MX Master 3', category: 'Accessories', price: 99 },
-  { id: 15, name: 'Kindle Paperwhite', category: 'Electronics', price: 139 },
-  { id: 16, name: 'Nespresso Vertuo', category: 'Appliances', price: 199 },
-  { id: 17, name: 'Instant Pot Duo', category: 'Appliances', price: 89 },
-  { id: 18, name: 'Dyson V15 Vacuum', category: 'Appliances', price: 699 },
-  { id: 19, name: 'Levi\'s 501 Jeans', category: 'Clothing', price: 69 },
-  { id: 20, name: 'North Face Jacket', category: 'Clothing', price: 199 },
-];
+// AsyncStorage keys
+const RECENT_SEARCHES_KEY = '@smartsearch_recent_searches';
+const MAX_RECENT_SEARCHES = 10;
 
 const SmartSearch: React.FC = () => {
   // State
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [suggestions, setSuggestions] = useState<ScoredProduct[]>([]);
-  const [recentSearches, setRecentSearches] = useState<Product[]>([
-    MOCK_PRODUCTS[0], // Coca Cola
-    MOCK_PRODUCTS[1], // Azam Juice Mango
-    MOCK_PRODUCTS[2], // Dell Laptop
-    MOCK_PRODUCTS[3], // iPhone
-    MOCK_PRODUCTS[4], // Nike Shoes
-    MOCK_PRODUCTS[5],
-    MOCK_PRODUCTS[6],
-    MOCK_PRODUCTS[7],
-    MOCK_PRODUCTS[8], // Nike Shoes
-    MOCK_PRODUCTS[9],
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [recentSearches, setRecentSearches] = useState<Product[]>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [feedbackProduct, setFeedbackProduct] = useState<Product | null>(null);
-  
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   // Refs
   const inputRef = useRef<RNTextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const lastAddTime = useRef<number>(0);
   
+  // Load products and recent searches on mount
+  useEffect(() => {
+    loadProductsAndRecentSearches();
+  }, []);
+
   // Auto focus on mount
   useEffect(() => {
-  if (showSuggestions) {
-    requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-  }
-}, [showSuggestions]);
+    if (showSuggestions) {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    }
+  }, [showSuggestions]);
 
+  // Load products from database and recent searches from AsyncStorage
+  const loadProductsAndRecentSearches = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load products from database
+      const rawProducts = fetchAllStock();
+      
+      // Transform to Product format
+      const transformedProducts: Product[] = rawProducts.map(p => ({
+        id: Number(p.id),
+        name: p.productName,
+        category: p.category || 'Uncategorized',
+        price: p.sellingPrice || 0
+      }));
+      
+      setProducts(transformedProducts);
+      
+      // Load recent searches from AsyncStorage
+      const recentSearchesJson = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      if (recentSearchesJson) {
+        const recent = JSON.parse(recentSearchesJson) as Product[];
+        // Filter out any products that no longer exist in our database
+        const validRecent = recent.filter(recentProduct => 
+          transformedProducts.some(p => p.id === recentProduct.id)
+        );
+        setRecentSearches(validRecent);
+      }
+    } catch (error) {
+      console.error('Error loading products or recent searches:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save recent searches to AsyncStorage
+  const saveRecentSearches = async (searches: Product[]) => {
+    try {
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+    } catch (error) {
+      console.error('Error saving recent searches:', error);
+    }
+  };
+
+  // Find product in the database by ID
+  const findProductById = (id: number): Product | undefined => {
+    return products.find(p => p.id === id);
+  };
+
+  // Find product in the database by name (for recent searches)
+  const findProductByName = (name: string): Product | undefined => {
+    return products.find(p => p.name.toLowerCase() === name.toLowerCase());
+  };
   
   // Typo tolerance helper function
   const getTypoToleranceScore = (query: string, text: string): number => {
@@ -178,14 +209,14 @@ const SmartSearch: React.FC = () => {
     ];
   };
   
-  // Smart search algorithm
+  // Smart search algorithm using real products
   const searchProducts = (query: string): ScoredProduct[] => {
-    if (!query.trim()) return [];
+    if (!query.trim() || products.length === 0) return [];
     
     const lowerQuery = query.toLowerCase();
     const words = lowerQuery.split(' ').filter(w => w.length > 0);
     
-    const scoredProducts: ScoredProduct[] = MOCK_PRODUCTS.map(product => {
+    const scoredProducts: ScoredProduct[] = products.map(product => {
       const lowerName = product.name.toLowerCase();
       const lowerCategory = product.category.toLowerCase();
       
@@ -248,7 +279,7 @@ const SmartSearch: React.FC = () => {
   };
   
   // Add to cart with debounce
-  const addToCart = (product: Product): void => {
+  const addToCart = async (product: Product): Promise<void> => {
     const now = Date.now();
     if (now - lastAddTime.current < 500) return; // Prevent rapid tapping
     if (isAdding) return;
@@ -259,11 +290,12 @@ const SmartSearch: React.FC = () => {
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
-    // Update recent searches
-    setRecentSearches(prev => {
-      const filtered = prev.filter(p => p.id !== product.id);
-      return [product, ...filtered.slice(0, 9)]; // Keep 10 items max
-    });
+    // Update recent searches in state and AsyncStorage
+    const updatedRecentSearches = [product, ...recentSearches.filter(p => p.id !== product.id)].slice(0, MAX_RECENT_SEARCHES);
+    setRecentSearches(updatedRecentSearches);
+    
+    // Save to AsyncStorage
+    await saveRecentSearches(updatedRecentSearches);
     
     // Show feedback
     setFeedbackProduct(product);
@@ -292,6 +324,10 @@ const SmartSearch: React.FC = () => {
     
     // Reset adding state
     setTimeout(() => setIsAdding(false), 500);
+    
+    // TODO: Here you would also add the product to your actual cart/order system
+    // Example: dispatch(addToCartAction(product));
+    console.log('Added to cart:', product);
   };
   
   // Clear search
@@ -302,10 +338,22 @@ const SmartSearch: React.FC = () => {
     inputRef.current?.focus();
   };
   
+  // Clear all recent searches
+  const clearRecentSearches = async (): Promise<void> => {
+    setRecentSearches([]);
+    await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
+  };
+  
+  // Remove specific recent search
+  const removeRecentSearch = async (id: number): Promise<void> => {
+    const updated = recentSearches.filter(p => p.id !== id);
+    setRecentSearches(updated);
+    await saveRecentSearches(updated);
+  };
+  
   // Render suggestion item
   const renderSuggestion: ListRenderItem<ScoredProduct> = ({ item }) => {
     const highlightedParts = getHighlightedText(item.name, searchQuery);
-    console.log("sugg: ", suggestions.length)
     
     return (
       <Pressable
@@ -328,32 +376,30 @@ const SmartSearch: React.FC = () => {
           </View>
           <Text className="text-gray-500 text-xs ml-7 mt-1">{item.category}</Text>
         </View>
-        <Text className="text-green-600 font-semibold">${item.price}</Text>
+        <Text className="text-sky-500 font-semibold">{item.price.toLocaleString()} TZS</Text>
       </Pressable>
     );
   };
   
   // Render recent search item
   const renderRecentItem = (item: Product, index: number) => (
-    <TouchableOpacity
-      key={item.id}
-      onPress={() => {
-        setSearchQuery(item.name);
-        const results = searchProducts(item.name);
-        setSuggestions(results);
-        setShowSuggestions(true);
-      }}
-      className="w-1/2 pr-2 mb-2"
-      activeOpacity={0.7}
-    >
-      <View className="bg-sky-50 border border-gray-300 rounded-full px-4 py-2 flex-row items-center">
+    <View key={item.id} className="w-1/2 pr-2 mb-2">
+      <TouchableOpacity
+        onPress={() => {
+          setSearchQuery(item.name);
+          const results = searchProducts(item.name);
+          setSuggestions(results);
+          setShowSuggestions(true);
+        }}
+        activeOpacity={0.7}
+        className="bg-sky-50 border border-gray-300 rounded-full px-4 py-2 flex-row items-center"
+      >
         <AntDesign
           name="clock-circle"
           size={14}
           color="#6b7280"
           style={{ marginRight: 6 }}
         />
-
         <Text
           className="text-gray-700 flex-1"
           numberOfLines={1}
@@ -361,10 +407,18 @@ const SmartSearch: React.FC = () => {
         >
           {item.name}
         </Text>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      
+      {/* Remove button for recent searches */}
+      <TouchableOpacity
+        onPress={() => removeRecentSearch(item.id)}
+        className="absolute top-1 right-3 p-1"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Entypo name="cross" size={14} color="#9ca3af" />
+      </TouchableOpacity>
+    </View>
   );
-
 
   return (
     <View className="flex-1 bg-white p-4">
@@ -379,7 +433,7 @@ const SmartSearch: React.FC = () => {
             <Text className="text-green-800 font-semibold">Added to cart!</Text>
             <Text className="text-green-700 text-sm">{feedbackProduct.name}</Text>
           </View>
-          <Text className="text-green-600 font-bold">${feedbackProduct.price}</Text>
+          <Text className="text-green-600 font-bold">{feedbackProduct.price.toLocaleString()} TZS</Text>
         </Animated.View>
       )}
       
@@ -426,7 +480,6 @@ const SmartSearch: React.FC = () => {
               {suggestions.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-6">
                   <PackageSearch size={48} color="#cbd5e1" />
-
                   <Text className="text-gray-500 mt-3 text-sm">
                     No item found
                   </Text>
@@ -456,30 +509,59 @@ const SmartSearch: React.FC = () => {
         )}
       </View>
       
+      {/* Loading State */}
+      {isLoading && !showSuggestions && (
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-gray-500">Loading products...</Text>
+        </View>
+      )}
+      
       {/* Recent Searches */}
-      {!showSuggestions && (
+      {!showSuggestions && !isLoading && (
         <View className="flex-1">
           <View className="flex-row items-center justify-between mb-4">
             <View className="flex-row items-center">
               <MaterialCommunityIcons name="cart-variant" size={20} color="#4b5563" className="mr-2" />
               <Text className="text-gray-700 font-semibold text-lg">Recently Added Products</Text>
             </View>
-            <Text className="text-gray-500 text-sm">{recentSearches.length}/10</Text>
+            <View className="flex-row items-center">
+              <Text className="text-gray-500 text-sm mr-2">{recentSearches.length}/{MAX_RECENT_SEARCHES}</Text>
+              {recentSearches.length > 0 && (
+                <TouchableOpacity onPress={clearRecentSearches} className="p-1">
+                  <Text className="text-red-500 text-xs">Clear All</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
           
-          <View className="flex-row flex-wrap">
-            {recentSearches.map(renderRecentItem)}
-          </View>
-          
-          {recentSearches.length === 0 && (
+          {products.length === 0 ? (
             <View className="flex-1 items-center justify-center">
               <Entypo name="emoji-sad" size={64} color="#D1D5DB" />
+              <Text className="text-gray-400 mt-4">No products available</Text>
+              <Text className="text-gray-400 text-center mt-2">
+                Add products to your inventory first
+              </Text>
+            </View>
+          ) : recentSearches.length > 0 ? (
+            <View className="flex-row flex-wrap">
+              {recentSearches.map(renderRecentItem)}
+            </View>
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <Octicons name="history" size={64} color="#D1D5DB" />
               <Text className="text-gray-400 mt-4">No recent products</Text>
               <Text className="text-gray-400 text-center mt-2">
                 Search and add products to see them here
               </Text>
             </View>
           )}
+          
+          {/* Product Count Info */}
+          <View className="mt-6 pt-4 border-t border-gray-200">
+            <Text className="text-gray-500 text-sm text-center">
+              {products.length} products available in inventory
+            </Text>
+          </View>
         </View>
       )}
       

@@ -1,4 +1,3 @@
-// lib/tabMemory.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LAST_TAB_KEY = "last_active_tab";
