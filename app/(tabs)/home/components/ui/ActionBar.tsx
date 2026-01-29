@@ -5,7 +5,7 @@ type Props = {
   actions: ActionItem[];
 };
 
-export const ActionBar = ({ actions }: Props) => {
+export default function ActionBar ({ actions }: Props) {
   return (
     <View className="bg-white border-t border-gray-200 p-3">
       <View className="flex-row justify-between">
@@ -28,3 +28,4 @@ export const ActionBar = ({ actions }: Props) => {
     </View>
   );
 };
+

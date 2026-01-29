@@ -2,6 +2,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRef, useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Animated, StyleSheet } from "react-native";
 import * as Haptics from 'expo-haptics';
+import { useCartStore } from "@/store/cart";
 
 
 function NumberPad({
@@ -43,6 +44,10 @@ export default function QuickSaleScreen({ onAdd }: { onAdd: (item: any) => void 
   const [note, setNote] = useState("");
   const [feedback, setFeedback] = useState<boolean>(false);
 
+  // Store
+  const addItem = useCartStore(state => state.addItem);
+    
+
   const handlePad = (v: string, long = false) => {
     if (v === "⌫") {
         setPrice((p) => (long ? "" : p.slice(0, -1)));
@@ -54,38 +59,33 @@ export default function QuickSaleScreen({ onAdd }: { onAdd: (item: any) => void 
 
 
   const submit = () => {
-    // const p = parseFloat(price);
-    // const q = parseInt(qty || "1", 10);
-
-    // if (!p || p <= 0) return;
-
-    // onAdd({
-    //   type: "quick",
-    //   price: p,
-    //   qty: q,
-    //   note: note.trim() || undefined,
-    // });
+    addItem({
+      stockId: Date.now(), // unique id for each service.
+      name: note.trim() || "Huduma",
+      price: Number(price),
+      qty: 1
+    })
 
     setFeedback(true);
-        // Haptic feedback
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        fadeAnim.setValue(0);
-        
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    fadeAnim.setValue(0);
+    
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setTimeout(() => {
         Animated.timing(fadeAnim, {
-          toValue: 1,
+          toValue: 0,
           duration: 200,
           useNativeDriver: true,
         }).start(() => {
-          setTimeout(() => {
-            Animated.timing(fadeAnim, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }).start(() => {
-            setFeedback(false);
-            });
-          }, 1500);
+        setFeedback(false);
         });
+      }, 1500);
+    });
 
     // reset
     setPrice("");
@@ -133,7 +133,7 @@ const fadeAnim = useRef(new Animated.Value(0)).current;
             </View>
 
             <View className="flex-[2]">
-            <Text className="text-xs text-slate-400 mb-1">Note (optional)</Text>
+            <Text className="text-xs text-slate-400 mb-1">Title (optional): </Text>
             <TextInput
                 value={note}
                 onChangeText={setNote}

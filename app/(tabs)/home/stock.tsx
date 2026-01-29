@@ -7,7 +7,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import { useListActions } from '@/helpers/actionHandler.help';
-import { ActionBar } from './components/ui/ActionBar';
+import ActionBar from './components/ui/ActionBar';
 
 const generateStockBatch = (supplierName?: string): string => {
   // 1. Get first 15 letters of supplier (uppercase)
@@ -599,7 +599,6 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
 }
 
 
-
 interface ImportModalProps {
   visible: boolean;
   onClose: () => void;
@@ -777,7 +776,10 @@ const ImportModal: React.FC<ImportModalProps> = ({ visible, onClose, onImport })
   );
 };
 
-
+const cleanNumber = (val: string) => {
+  // Remove commas and any non-numeric characters except for a decimal point
+  return val.replace(/[^0-9.]/g, '');
+};
 
 function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boolean; stock: FetchStock | null; onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState<StockInput>({
@@ -897,7 +899,10 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
                   keyboardType="numeric" 
                   placeholder="0" 
                   value={form.quantity.toLocaleString()} 
-                  onChangeText={(t: string) => setForm({...form, quantity: Number(t)})} 
+                  onChangeText={(t: string) => {
+                    const cleaned = cleanNumber(t);
+                    setForm({...form, quantity: cleaned ? Number(cleaned) : 0 });
+                  }} 
                 />
               </View>
               <View className="flex-1">
@@ -907,7 +912,10 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
                   keyboardType="numeric" 
                   placeholder="500" 
                   value={form.sellingPrice.toLocaleString()} 
-                  onChangeText={(t: string) => setForm({...form, sellingPrice: Number(t)})} 
+                  onChangeText={(t: string) => {
+                    const cleaned = cleanNumber(t);
+                    setForm({...form, sellingPrice: cleaned ? Number(cleaned) : 0 })
+                  }} 
                 />
               </View>
             </View>
@@ -920,7 +928,10 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
                   keyboardType="numeric" 
                   placeholder="200" 
                   value={form.buyingPrice.toLocaleString()} 
-                  onChangeText={(t: string) => setForm({...form, buyingPrice: Number(t)})} 
+                  onChangeText={(t: string) => {
+                    const cleaned = cleanNumber(t);
+                    setForm({...form, buyingPrice: cleaned ? Number(cleaned) : 0 })}
+                  } 
                 />
               </View>
 
