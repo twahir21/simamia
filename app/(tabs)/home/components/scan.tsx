@@ -124,7 +124,6 @@ export default function ScanScreen() {
       setScanResult("success")
       triggerSuccessFlash();
       
-      //
       const stockFromDb = addToCart(productId);
 
       if (stockFromDb) {

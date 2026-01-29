@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert, ActivityIndicator } from 'react-native';
 import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Truck, Hash, Calendar, Target, X, Download, PackageSearch } from 'lucide-react-native';
-import { BottomActions } from './components/ui/Actions';
 import { deleteStock, fetchAllStock, saveStock, searchStock, stockAnalysis, updateStock } from '@/db/stock.sqlite';
 import { FetchStock, StockInput } from '@/types/stock.types';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
+import { useListActions } from '@/helpers/actionHandler.help';
+import { ActionBar } from './components/ui/ActionBar';
 
 const generateStockBatch = (supplierName?: string): string => {
   // 1. Get first 15 letters of supplier (uppercase)
@@ -200,6 +201,12 @@ export default function Stock() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // actions
+  const actions = useListActions({
+    module: "stock",
+    data: STOCKS
+  })
+
   // Run search whenever query changes
   useEffect(() => {
 
@@ -276,7 +283,35 @@ export default function Stock() {
         </View>
         }
       />)}
-      <BottomActions />
+      <ActionBar
+          actions={[
+            {
+              key: "export",
+              label: "Export",
+              icon: <Ionicons name="download-outline" size={20} color="#4B5563" />,
+              onPress: actions.handleExport,
+            },
+            {
+              key: "filter",
+              label: "Filter",
+              icon: <Ionicons name="filter" size={20} color="#4B5563" />,
+              onPress: actions.openFilter,
+            },
+            {
+              key: "sort",
+              label: "Sort",
+              icon: <MaterialIcons name="sort" size={20} color="#4B5563" />,
+              onPress: actions.openSort,
+            },
+            {
+              key: "print",
+              label: "Print",
+              icon: <Ionicons name="print-outline" size={20} color="#4B5563" />,
+              onPress: actions.handlePrint,
+            },
+          ]}
+        />
+
 
       {/* Floating Add Button */}
       <Pressable
@@ -402,8 +437,8 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
           {/* Header */}
           <View className="flex-row justify-between items-center mb-6">
             <Text className="text-2xl font-black text-slate-900">Add Stock</Text>
-            <Pressable onPress={onClose} className="bg-slate-100 p-2 rounded-full">
-               <Text className="text-slate-500 font-bold px-2">X</Text>
+            <Pressable onPress={onClose} className="p-2 rounded-full">
+              <Ionicons name="close-sharp" size={30} color="black" />         
             </Pressable>
           </View>
 
@@ -837,8 +872,8 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
           {/* Header */}
           <View className="flex-row justify-between items-center mb-6">
             <Text className="text-2xl font-black text-slate-900">Edit Stock</Text>
-            <Pressable onPress={onClose} className="bg-slate-100 p-2 rounded-full">
-               <Text className="text-slate-500 font-bold px-2">X</Text>
+            <Pressable onPress={onClose} className="p-2 rounded-full">
+              <Ionicons name="close-sharp" size={30} color="black" />         
             </Pressable>
           </View>
 

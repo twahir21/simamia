@@ -1,5 +1,5 @@
 // components/SmartSearch.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,17 @@ import {
   TextInputKeyPressEventData,
   Pressable,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { AntDesign, Entypo, Feather, FontAwesome6, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
 import { PackageSearch } from 'lucide-react-native';
-import { fetchAllStock } from '@/db/stock.sqlite';
+import { addToCart, fetchAllStock } from '@/db/stock.sqlite';
+import { useCartStore } from '@/store/cart';
+import { AppError } from '@/types/globals.types';
+import ErrorModal from './ui/Error';
 
 // Types
 interface Product {
@@ -50,16 +54,18 @@ const SmartSearch: React.FC = () => {
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [feedbackProduct, setFeedbackProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeError, setActiveError] = useState<AppError | null>(null);
+
+  // Store
+  const addItem = useCartStore(state => state.addItem);
+  
 
   // Refs
   const inputRef = useRef<RNTextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const lastAddTime = useRef<number>(0);
   
-  // Load products and recent searches on mount
-  useEffect(() => {
-    loadProductsAndRecentSearches();
-  }, []);
+
 
   // Auto focus on mount
   useEffect(() => {
@@ -71,7 +77,7 @@ const SmartSearch: React.FC = () => {
   }, [showSuggestions]);
 
   // Load products from database and recent searches from AsyncStorage
-  const loadProductsAndRecentSearches = async () => {
+  const loadProductsAndRecentSearches = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -103,18 +109,46 @@ const SmartSearch: React.FC = () => {
         setRecentSearches(refreshedRecent);
       }
     } catch (error) {
-      console.error('Error loading products or recent searches:', error);
+        setActiveError({
+          type: "LOAD",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load products or Recent searches",
+          retry: loadProductsAndRecentSearches,
+        });
+
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Load products and recent searches on mount
+  useEffect(() => {
+    loadProductsAndRecentSearches();
+  }, [loadProductsAndRecentSearches]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadProductsAndRecentSearches();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadProductsAndRecentSearches]);
 
   // Save recent searches to AsyncStorage
   const saveRecentSearches = async (searches: Product[]) => {
     try {
       await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
     } catch (error) {
-      console.error('Error saving recent searches:', error);
+      setActiveError({
+        type: "SAVE",
+        message: error instanceof Error ? error.message : 'Error saving recent Searches',
+        retry: () => saveRecentSearches(searches)
+      })
     }
   };
 
@@ -270,15 +304,8 @@ const SmartSearch: React.FC = () => {
     }
   };
   
-  // Handle key press (Enter)
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>): void => {
-    if (e.nativeEvent.key === 'Enter' && suggestions.length > 0) {
-      addToCart(suggestions[0]);
-    }
-  };
-  
   // Add to cart with debounce
-  const addToCart = async (product: Product): Promise<void> => {
+  const addPrdToCart = async (product: Product): Promise<void> => {
     const now = Date.now();
     if (now - lastAddTime.current < 500) return; // Prevent rapid tapping
     if (isAdding) return;
@@ -324,10 +351,27 @@ const SmartSearch: React.FC = () => {
     // Reset adding state
     setTimeout(() => setIsAdding(false), 500);
     
-    // TODO: Here you would also add the product to your actual cart/order system
-    // Example: dispatch(addToCartAction(product));
-    console.log('Added to cart:', product);
+    // adds to global cart
+    const stockFromDb = addToCart(product.id);
+
+    if (stockFromDb) {
+      addItem({
+        stockId: stockFromDb.id,
+        name: stockFromDb.productName,
+        price: stockFromDb.sellingPrice,
+        qty: 1
+      })
+    }
+    
   };
+
+    // Handle key press (Enter)
+  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>): void => {
+    if (e.nativeEvent.key === 'Enter' && suggestions.length > 0) {
+      addPrdToCart(suggestions[0]);
+    }
+  };
+  
   
   // Clear search
   const clearSearch = (): void => {
@@ -356,7 +400,7 @@ const SmartSearch: React.FC = () => {
     
     return (
       <Pressable
-        onPress={() => addToCart(item)}
+        onPress={() => addPrdToCart(item)}
         className="px-4 py-3 border-b border-gray-400 active:bg-gray-50 flex-row items-center justify-between"
       >
         <View className="flex-1">
@@ -450,7 +494,7 @@ const SmartSearch: React.FC = () => {
             returnKeyType="search"
             onSubmitEditing={() => {
               if (suggestions.length > 0) {
-                addToCart(suggestions[0]);
+                addPrdToCart(suggestions[0]);
               }
             }}
           />
@@ -494,6 +538,14 @@ const SmartSearch: React.FC = () => {
                   keyExtractor={(item) => item.id.toString()}
                   keyboardShouldPersistTaps="always"
                   showsVerticalScrollIndicator
+                  refreshControl={
+                    <RefreshControl 
+                      refreshing={refreshing} 
+                      onRefresh={onRefresh} 
+                      colors={['#0ea5e9', '#0c4a6e']} // Android spinner colors
+                      tintColor="#0c4a6e" // iOS spinner color
+                    />
+                  }
                 />
         
                 <View className="px-4 py-2 border-t border-gray-300 bg-gray-100">
@@ -574,6 +626,15 @@ const SmartSearch: React.FC = () => {
           </View>
         </View>
       )}
+
+      <ErrorModal
+        visible={!!activeError}
+        message={activeError?.message ?? null}
+        onRetry={activeError?.retry}
+        onClose={() => setActiveError(null)}
+      />
+
+
       
     </View>
   );

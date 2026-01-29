@@ -10,11 +10,12 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Entypo, FontAwesome, Fontisto, Ionicons } from '@expo/vector-icons';
+import { Entypo, FontAwesome, Fontisto, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
 import { orders } from '@/const/orders';
-import { BottomActions } from './home/components/ui/Actions';
 import { PhoneCall } from 'lucide-react-native';
+import { ActionBar } from './home/components/ui/ActionBar';
+import { useListActions } from '@/helpers/actionHandler.help';
 // types/order.ts
 export type DeliveryStatus = 'pending' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
@@ -234,6 +235,12 @@ const Orders = () => {
     </Modal>
   );
 
+  // actions
+  const actions = useListActions({
+    module: "orders",
+    data: ordersList
+  })
+
   return (
     <SafeAreaView className="flex-1">
       {/* Header */}
@@ -394,7 +401,35 @@ const Orders = () => {
           ))
         )}
       </ScrollView>
-      <BottomActions />
+      <ActionBar
+        actions={[
+          {
+            key: "export",
+            label: "Export",
+            icon: <Ionicons name="download-outline" size={20} color="#4B5563" />,
+            onPress: actions.handleExport,
+          },
+          {
+            key: "filter",
+            label: "Filter",
+            icon: <Ionicons name="filter" size={20} color="#4B5563" />,
+            onPress: actions.openFilter,
+          },
+          {
+            key: "sort",
+            label: "Sort",
+            icon: <MaterialIcons name="sort" size={20} color="#4B5563" />,
+            onPress: actions.openSort,
+          },
+          {
+            key: "print",
+            label: "Print",
+            icon: <Ionicons name="print-outline" size={20} color="#4B5563" />,
+            onPress: actions.handlePrint,
+          },
+        ]}
+      />
+
 
       {/* Filter Modal */}
       <Modal
