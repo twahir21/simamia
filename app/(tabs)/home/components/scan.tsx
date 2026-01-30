@@ -21,8 +21,8 @@ export default function ScanScreen() {
   const flashAnim = useRef(new Animated.Value(0)).current;
   
   // Preload sounds
-  const errorBeep = useAudioPlayer(require("../../../../assets/sounds/error.wav"));
-  const successBeep = useAudioPlayer(require("../../../../assets/sounds/beep.wav")); // Add success sound
+  const errorBeep = useAudioPlayer(require("@/assets/sounds/error.wav"));
+  const successBeep = useAudioPlayer(require("@/assets/sounds/beep.wav")); // Add success sound
 
   if (!permission) {
     return <View />;

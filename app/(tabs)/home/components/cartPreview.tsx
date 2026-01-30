@@ -1,9 +1,24 @@
+import { saveCashSales, validateCartStock } from "@/db/sales.sqlite";
 import { useCartStore } from "@/store/cart";
 import { Feather } from "@expo/vector-icons";
+import { useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
+
+import SuccessToast from "./ui/Success";
+import { router } from "expo-router";
+import { useAudioPlayer } from "expo-audio";
+
+
+
 
 export default function CartPreview() {
   const cart = useCartStore((state) => state.items);
+  const clearCart = useCartStore(state => state.clearCart)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [lastSaleId, setLastSaleId] = useState<number | null>(null);
+
+  const successSound = useAudioPlayer(require("@/assets/sounds/success.mp3"))
 
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.qty,
@@ -37,10 +52,57 @@ export default function CartPreview() {
     );
   }
 
+  const handleSales = () => {
+    setErrorMessage(null); // Clear previous errors
+    const isQtySafe = validateCartStock(cart);
+
+    if(!isQtySafe.isValid) {
+      setErrorMessage(isQtySafe.message || "Insufficient stock for some items");
+      return;
+    }
+
+    try {
+        const saleId = saveCashSales(totalAmount, cart);
+        
+        setToastVisible(true);
+
+        if (successSound) {
+          successSound.seekTo(0);
+          successSound.play();
+        }
+
+        setLastSaleId(saleId);
+        clearCart();
+      } catch (e) {
+        setErrorMessage(`Database error: Could not save sale. ${e}`);
+      }
+  }
+
   return (
-    <>
+    <View className="flex-1">
+      <SuccessToast
+        visible={toastVisible}
+        message={`Sale saved — TZS ${totalAmount.toLocaleString()}`}
+        onClose={() => setToastVisible(false)}
+        onReceipt={() => {
+          setToastVisible(false);
+          router.push(`/receipt/${lastSaleId}`);
+        }}
+      />
       {/* MINI CART */}
       <View className="bg-white rounded-xl border border-gray-400 mx-4 my-2 px-3 py-2">
+        {/* Error message */}
+        {errorMessage && (
+          <View className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <View className="flex-row items-center gap-2">
+              <Feather name="alert-triangle" size={16} color="#DC2626" />
+              <Text className="text-sm text-red-700 flex-1">{errorMessage}</Text>
+              <Pressable onPress={() => setErrorMessage(null)}>
+                <Feather name="x" size={16} color="#9CA3AF" />
+              </Pressable>
+            </View>
+          </View>
+        )}
         {/* Compact meta row */}
         <View className="flex-row justify-between items-center mb-1">
           <Text className="text-xs text-gray-600">
@@ -121,12 +183,14 @@ export default function CartPreview() {
 
           <Pressable
             className="flex-1 bg-sky-800 rounded-xl py-4 flex-row items-center justify-center gap-2 shadow-sm"
+            onPress={handleSales}
           >
             <Feather name="save" size={14} color="white" />
             <Text className="text-center text-white font-bold">SAVE SALES</Text>
           </Pressable>
         </View>
       </View>
-    </>
+
+    </View>
   );
 }

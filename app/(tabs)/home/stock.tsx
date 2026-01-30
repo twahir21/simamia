@@ -383,8 +383,9 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
   });
 
   const handleSubmit = () => {
-    // Basic validation for Critical fieldsPrice
-    if (!form.productName || !form.quantity || !form.sellingPrice || !form.buyingPrice || !form.minStock) {
+    // Basic validation for Critical fieldsPrice 
+    // (Quantity can be zero - allow edit in 0 stocked products)
+    if (!form.productName || !form.sellingPrice || !form.buyingPrice || !form.minStock) {
       Alert.alert(
         "Missing information",
         "Please fill in all required fields with * before saving.",

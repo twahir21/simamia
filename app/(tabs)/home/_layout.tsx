@@ -21,7 +21,7 @@ export default function HomeLayout() {
             headerTitle: () => (
               <View className="flex-row items-center gap-2 mt-5">
                 <Image
-                  source={require("../../../assets/images/logo.png")}
+                  source={require("@/assets/images/logo.png")}
                   style={{
                     width: 20,
                     height: 20,

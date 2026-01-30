@@ -10,13 +10,13 @@ type DashboardItem = {
 };
 
 const DATA: DashboardItem[] = [
-  { id: "2", title: "Categories", image: require("../../assets/images/categories.png"), route: "/pages/categories" },
-  { id: "3", title: "Customers", image: require("../../assets/images/customers.png"), route: "/pages/customers" },
-  { id: "4", title: "Suppliers", image: require("../../assets/images/suppliers.png"), route: "/pages/suppliers" },
-  { id: "5", title: "Re-Stock", image: require("../../assets/images/restocking.png"), route: "/pages/restock" },
-  { id: "6", title: "Reports", image: require("../../assets/images/reports.png"), route: "/pages/reports" },
-  { id: "7", title: "Expenses", image: require("../../assets/images/expenses.png"), route: "/pages/expenses" },
-  { id: "8", title: "Sales", image: require("../../assets/images/sales.png"), route: "/pages/sales" },
+  { id: "2", title: "Categories", image: require("@/assets/images/categories.png"), route: "/pages/categories" },
+  { id: "3", title: "Customers", image: require("@/assets/images/customers.png"), route: "/pages/customers" },
+  { id: "4", title: "Suppliers", image: require("@/assets/images/suppliers.png"), route: "/pages/suppliers" },
+  { id: "5", title: "Re-Stock", image: require("@/assets/images/restocking.png"), route: "/pages/restock" },
+  { id: "6", title: "Reports", image: require("@/assets/images/reports.png"), route: "/pages/reports" },
+  { id: "7", title: "Expenses", image: require("@/assets/images/expenses.png"), route: "/pages/expenses" },
+  { id: "8", title: "Sales", image: require("@/assets/images/sales.png"), route: "/pages/sales" },
 ];
 
 export default function Pages() {

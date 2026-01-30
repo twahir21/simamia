@@ -63,7 +63,8 @@ export default function QuickSaleScreen({ onAdd }: { onAdd: (item: any) => void 
       stockId: Date.now(), // unique id for each service.
       name: note.trim() || "Huduma",
       price: Number(price),
-      qty: 1
+      qty: 1,
+      isQuickSale: true
     })
 
     setFeedback(true);
