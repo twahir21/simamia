@@ -1,5 +1,6 @@
 import { CartItem } from "@/types/stock.types";
 import { db } from "./stock.sqlite";
+import { AllSalesRecords, SaleItem, SaleRecord } from "@/types/globals.types";
 
 export const initSalesDB = () => {
   db.execSync(`
@@ -113,6 +114,35 @@ export const saveCashSales = (totalAmount: number, cart: CartItem[]) => {
   }
 }
 
+export const fetchSales = () => {
+  const sales = db.getAllSync<SaleRecord>(`
+    SELECT * FROM sales ORDER BY createdAt DESC
+  `);
+
+  const allItems = db.getAllSync<SaleItem>(`SELECT * FROM sale_items`);
+
+  // 3. Map items to their respective sales
+  return sales.map((sale) => ({
+    ...sale,
+    items: allItems.filter((item) => item.saleId === sale.id),
+  }));
+}
+
+export const fetchSaleById = (saleId: number): AllSalesRecords | null => {
+  const sale = db.getFirstSync<SaleRecord>(
+    `SELECT * FROM sales WHERE id = ?`, 
+    [saleId]
+  );
+
+  if (!sale) return null;
+
+  const items = db.getAllSync<SaleItem>(
+    `SELECT * FROM sale_items WHERE saleId = ?`, 
+    [saleId]
+  );
+
+  return { ...sale, items };
+};
 
 const hasEnoughStock = (id: number, requestedQty: number): boolean => {
     const result = db.getFirstSync<{ quantity: number }>(

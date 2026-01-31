@@ -1,4 +1,4 @@
-import { saveCashSales, validateCartStock } from "@/db/sales.sqlite";
+import { fetchSales, saveCashSales, validateCartStock } from "@/db/sales.sqlite";
 import { useCartStore } from "@/store/cart";
 import { Feather } from "@expo/vector-icons";
 import { useState } from "react";
@@ -8,49 +8,21 @@ import SuccessToast from "./ui/Success";
 import { router } from "expo-router";
 import { useAudioPlayer } from "expo-audio";
 
-
-
-
 export default function CartPreview() {
   const cart = useCartStore((state) => state.items);
-  const clearCart = useCartStore(state => state.clearCart)
+  const clearCart = useCartStore(state => state.clearCart);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<number | null>(null);
+  const [saleAmount, setSaleAmount] = useState<number>(0); // Store sale amount separately
 
-  const successSound = useAudioPlayer(require("@/assets/sounds/success.mp3"))
+  const successSound = useAudioPlayer(require("@/assets/sounds/success.mp3"));
 
+  // Add this useEffect to track toastVisible changes
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.qty,
     0
   );
-
-  if (cart.length === 0) {
-    return (
-      <View className="px-4 py-2 bg-white">
-        <View className="flex-row gap-3">
-          <Pressable
-            className="flex-1 border border-gray-300 bg-gray-50 rounded-xl py-4"
-            disabled={true}
-          >
-            <Text className="text-center font-semibold text-gray-400">
-              VIEW CART
-            </Text>
-          </Pressable>
-
-          <Pressable
-            className="flex-1 bg-gray-300 rounded-xl py-4 flex-row items-center justify-center gap-2"
-            disabled={true}
-          >
-            <Feather name="save" size={14} color="#9CA3AF" />
-            <Text className="text-center text-gray-500 font-bold">
-              SAVE SALES
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
 
   const handleSales = () => {
     setErrorMessage(null); // Clear previous errors
@@ -62,27 +34,38 @@ export default function CartPreview() {
     }
 
     try {
-        const saleId = saveCashSales(totalAmount, cart);
-        
-        setToastVisible(true);
+      // Save the amount BEFORE clearing cart
+      const currentSaleAmount = totalAmount;
+      
+      const saleId = saveCashSales(currentSaleAmount, cart);
+      
+      // Store the sale amount for the toast
+      setSaleAmount(currentSaleAmount);
+      setLastSaleId(saleId);
+      setToastVisible(true);
 
-        if (successSound) {
-          successSound.seekTo(0);
-          successSound.play();
-        }
-
-        setLastSaleId(saleId);
-        clearCart();
-      } catch (e) {
-        setErrorMessage(`Database error: Could not save sale. ${e}`);
+      if (successSound) {
+        successSound.seekTo(0);
+        successSound.play();
       }
+
+      clearCart();
+    } catch (e) {
+      setErrorMessage(`Database error: Could not save sale. ${e}`);
+    }
+  }
+
+  const getSales = () => {
+    const data = fetchSales()
+    console.log(data)
+    console.log(JSON.stringify(data, null, 2))
   }
 
   return (
-    <View className="flex-1">
+    <View>
       <SuccessToast
         visible={toastVisible}
-        message={`Sale saved — TZS ${totalAmount.toLocaleString()}`}
+        message={`Sale saved — TZS ${saleAmount.toLocaleString()}`} // Use saleAmount, not totalAmount
         onClose={() => setToastVisible(false)}
         onReceipt={() => {
           setToastVisible(false);
@@ -90,6 +73,9 @@ export default function CartPreview() {
         }}
       />
       {/* MINI CART */}
+      {cart.length > 0 ?
+      (
+      <>
       <View className="bg-white rounded-xl border border-gray-400 mx-4 my-2 px-3 py-2">
         {/* Error message */}
         {errorMessage && (
@@ -170,11 +156,11 @@ export default function CartPreview() {
         </View>
       </View>
 
-      {/* Bottom Actions */}
       <View className="px-4 py-2 bg-white">
         <View className="flex-row gap-3">
           <Pressable
             className="flex-1 border border-sky-800 bg-white rounded-xl py-4 active:bg-blue-50"
+            onPress={getSales}
           >
             <Text className="text-center font-semibold text-sky-800">
               VIEW CART
@@ -190,7 +176,31 @@ export default function CartPreview() {
           </Pressable>
         </View>
       </View>
+      </>
+      ) : (
+      <View className="px-4 py-2 bg-white">
+        <View className="flex-row gap-3">
+          <Pressable
+            className="flex-1 border border-gray-300 bg-gray-50 rounded-xl py-4"
+            disabled={true}
+          >
+            <Text className="text-center font-semibold text-gray-400">
+              VIEW CART
+            </Text>
+          </Pressable>
 
+          <Pressable
+            className="flex-1 bg-gray-300 rounded-xl py-4 flex-row items-center justify-center gap-2"
+            disabled={true}
+          >
+            <Feather name="save" size={14} color="#9CA3AF" />
+            <Text className="text-center text-gray-500 font-bold">
+              SAVE SALES
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+      )}
     </View>
   );
 }

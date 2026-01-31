@@ -13,7 +13,7 @@ type Props = {
 export default function SuccessToast({
   visible,
   message,
-  duration = 180000,
+  duration = 1800,
   onClose,
   onReceipt,
 }: Props) {
@@ -21,49 +21,84 @@ export default function SuccessToast({
   const translateY = useRef(new Animated.Value(-60)).current;
 
   useEffect(() => {
-    if (!visible) return;
+      if (!visible) {
+      // Reset animations when toast hides
+      progress.setValue(0);
+      translateY.setValue(-60);
+      return;
+    }
 
-    // slide in
+    // Clear any existing animations
+    progress.stopAnimation();
+    translateY.stopAnimation();
+
+    // Reset to initial values
+    progress.setValue(0);
+    translateY.setValue(-60);
+
+    // Slide in animation
     Animated.spring(translateY, {
       toValue: 0,
       useNativeDriver: true,
+      tension: 100,
+      friction: 12,
     }).start();
 
-    // progress bar
+    // Progress bar animation
     Animated.timing(progress, {
       toValue: 1,
       duration,
       useNativeDriver: false,
-    }).start();
+    }).start(() => {
+      // Animation completed callback
+      if (visible) {
+        onClose();
+      }
+    });
 
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
+    // Fallback timer in case animation fails
+    const timer = setTimeout(() => {
+      if (visible) {
+        onClose();
+      }
+    }, duration + 100); // Slightly longer than animation
+
+    return () => {
+      clearTimeout(timer);
+      // Clean up animations when component unmounts or visibility changes
+      progress.stopAnimation();
+      translateY.stopAnimation();
+    };
   }, [visible, duration, onClose, progress, translateY]);
 
+  // Early return - keep this to prevent rendering when not visible
   if (!visible) return null;
 
   return (
     <Animated.View
       style={{ transform: [{ translateY }] }}
-      className="absolute top-3 left-3 right-3 z-50 bg-green-600 rounded-xl shadow-lg overflow-hidden"
+      className="absolute bottom-2 left-3 right-3 z-50 bg-green-600 rounded-xl shadow-lg overflow-hidden"
     >
-      <View className="px-4 py-3 flex-row items-center gap-3">
+      <View className="px-4 py-2.5 flex-row items-center gap-3">
         <Feather name="check-circle" size={18} color="white" />
 
-        <Text className="text-white font-semibold flex-1" numberOfLines={2}>
+        <Text className="text-white font-semibold flex-1" numberOfLines={3}>
           {message}
         </Text>
 
         {onReceipt && (
           <Pressable
             onPress={onReceipt}
-            className="px-3 py-1 rounded-lg bg-white/20"
+            className="px-3 py-2 rounded-lg bg-white/20 active:bg-white/30"
           >
             <Text className="text-white font-bold text-xs">Receipt</Text>
           </Pressable>
         )}
 
-        <Pressable onPress={onClose}>
+        <Pressable 
+          onPress={onClose}
+          className="active:opacity-70"
+        >
           <Feather name="x" size={18} color="white" />
         </Pressable>
       </View>
