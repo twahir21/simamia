@@ -1,12 +1,24 @@
 // SettingsScreen.tsx
 import { View, Text, TouchableOpacity, ScrollView, Switch, Linking } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
+import { getSetting, saveSetting } from "@/db/settings.sqlite";
 
 
 export default function Settings() {
   const [darkMode, setDarkMode] = useState(false);
   const [appLock, setAppLock] = useState(false);
+
+  useEffect(() => {
+    // Load setting on mount
+    const savedValue = getSetting("app_lock");
+    setAppLock(savedValue === "true"); // Convert string "true" to boolean true
+  }, []);
+
+  const toggleLock = (newValue: boolean) => {
+    setAppLock(newValue);
+    saveSetting("app_lock", String(newValue)); // Save as "true" or "false"
+  };
 
   return <>
     {/* Header */}
@@ -37,7 +49,11 @@ export default function Settings() {
         {/* App Lock */}
         <View className="flex-row justify-between items-center bg-white p-4 rounded-lg">
           <Text className="text-gray-800">App Lock</Text>
-          <Switch value={appLock} onValueChange={setAppLock} />
+          <Switch 
+            value={appLock} 
+            onValueChange={toggleLock} 
+            trackColor={{ false: "#d1d5db", true: "#075985" }}
+          />
         </View>
       </View>
 
