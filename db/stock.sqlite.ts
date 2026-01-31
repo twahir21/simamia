@@ -150,20 +150,34 @@ export const deleteStock = (id: number) => {
   db.runSync(`DELETE FROM stock WHERE id = ?`, [id]);
 };
 
-type stockAnalysisTs = {  lowStock: number; totalItems: number; outOfStock: number} | null;
 
 export const stockAnalysis = () => {
-  const result: stockAnalysisTs = db.getFirstSync(`
+  const result = db.getFirstSync<{
+    totalItems: number;
+    lowStock: number;
+    outOfStock: number;
+  }>(`
     SELECT
       COUNT(*) AS totalItems,
-      SUM(CASE WHEN quantity > 0 AND quantity < 5 THEN 1 ELSE 0 END) AS lowStock,
-      SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END) AS outOfStock
+      SUM(
+        CASE
+          WHEN quantity > 0 AND quantity <= minStock THEN 1
+          ELSE 0
+        END
+      ) AS lowStock,
+      SUM(
+        CASE
+          WHEN quantity = 0 THEN 1
+          ELSE 0
+        END
+      ) AS outOfStock
     FROM stock;
   `);
 
   return {
-    totalItems: result?.totalItems || 0,
-    lowStock: result?.lowStock || 0,
-    outOfStock: result?.outOfStock || 0,
+    totalItems: result?.totalItems ?? 0,
+    lowStock: result?.lowStock ?? 0,
+    outOfStock: result?.outOfStock ?? 0,
   };
 };
+

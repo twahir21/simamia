@@ -20,6 +20,8 @@ export default function SuccessToast({
   const progress = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-60)).current;
 
+  
+  
   useEffect(() => {
       if (!visible) {
       // Reset animations when toast hides
@@ -27,14 +29,15 @@ export default function SuccessToast({
       translateY.setValue(-60);
       return;
     }
-
+    
     // Clear any existing animations
     progress.stopAnimation();
     translateY.stopAnimation();
-
+    
     // Reset to initial values
     progress.setValue(0);
     translateY.setValue(-60);
+    
 
     // Slide in animation
     Animated.spring(translateY, {
@@ -74,6 +77,11 @@ export default function SuccessToast({
   // Early return - keep this to prevent rendering when not visible
   if (!visible) return null;
 
+  const stopAutoClose = () => {
+    progress.stopAnimation();
+    translateY.stopAnimation();
+  };
+
   return (
     <Animated.View
       style={{ transform: [{ translateY }] }}
@@ -88,7 +96,11 @@ export default function SuccessToast({
 
         {onReceipt && (
           <Pressable
-            onPress={onReceipt}
+            onPress={() => {
+              stopAutoClose();     // 🔑 cancel auto close
+              onReceipt?.();       // open modal / navigate
+              onClose();           // optional: close toast immediately
+            }}
             className="px-3 py-2 rounded-lg bg-white/20 active:bg-white/30"
           >
             <Text className="text-white font-bold text-xs">Receipt</Text>

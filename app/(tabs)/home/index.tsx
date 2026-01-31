@@ -1,12 +1,41 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { Link } from "expo-router";
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from "react-native";
+import { Link, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useState } from "react";
+import { fetchHomeAnalysis } from "@/db/analysis.sqlite";
 
 
 export default function App() {
+  const [refreshing, setRefreshing] = useState(false);
+  const [homeAnalysis, setHomeAnalysis] = useState({
+    todaySales: 0,
+    todayProfit: 0,
+    lowStock: 0,
+    outOfStock: 0,
+    expiredProducts: 0
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      // This runs every time you navigate BACK to this screen
+      setHomeAnalysis(fetchHomeAnalysis());
+    }, [])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setHomeAnalysis(fetchHomeAnalysis());
+    setRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    setHomeAnalysis(fetchHomeAnalysis())
+  }, [refreshing]);
 
   return <>
-  <ScrollView className="bg-white">
+  <ScrollView className="bg-white" refreshControl={
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  }>
       <View className="flex-1 px-4 pt-4">
 
       {/* Top Section */}
@@ -24,7 +53,7 @@ export default function App() {
               TODAY SALES
             </Text>
             <Text className="text-2xl font-bold text-gray-800">
-              TZS 1,245,000 /=
+              TZS {homeAnalysis.todaySales.toLocaleString()}/=
             </Text>
           </View>
         </View>
@@ -37,7 +66,7 @@ export default function App() {
               OUTSTANDING DEBTS
             </Text>
             <Text className="text-2xl font-bold text-red-600">
-              TZS 265,000 /=
+              TZS 0/=
             </Text>
           </View>
         </View>
@@ -47,10 +76,10 @@ export default function App() {
           <Ionicons name="trending-up-outline" size={24} color="#15803d" />
           <View className="ml-3">
             <Text className="text-xs text-gray-500 mb-1">
-              PROFIT
+              TODAY PROFIT
             </Text>
             <Text className="text-2xl font-bold text-green-700">
-              TZS 980,000 /=
+              TZS {homeAnalysis.todayProfit.toLocaleString()}/=
             </Text>
           </View>
         </View>
@@ -62,10 +91,10 @@ export default function App() {
             <Ionicons name="cube-outline" size={22} color="#ee" />
             <View className="ml-2">
               <Text className="text-xs text-gray-500 mb-1">
-                LOW STOCK
+                LOW & EMPTY STOCKS
               </Text>
               <Text className="text-xl font-bold">
-                12 Products
+                {homeAnalysis.outOfStock + homeAnalysis.lowStock} Products
               </Text>
             </View>
           </View>
@@ -78,7 +107,7 @@ export default function App() {
                 EXPIRED
               </Text>
               <Text className="text-xl font-bold">
-                5 Products
+                {homeAnalysis.expiredProducts} Products
               </Text>
             </View>
           </View>
