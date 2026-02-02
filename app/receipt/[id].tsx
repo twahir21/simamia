@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Platform, Alert } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome6 } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { fetchSaleById } from "@/db/sales.sqlite";
@@ -562,10 +562,10 @@ export default function ReceiptPage() {
             {isGeneratingPDF ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Feather name="download" size={18} color="white" />
+              <FontAwesome6 name="print" size={18} color="white" />
             )}
             <Text className="text-white font-bold">
-              {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
+              {isGeneratingPDF ? 'Generating PDF...' : 'Print'}
             </Text>
           </Pressable>
         </View>

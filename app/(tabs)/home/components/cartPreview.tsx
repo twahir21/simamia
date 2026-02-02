@@ -1,4 +1,4 @@
-import { fetchSales, saveCashSales, validateCartStock } from "@/db/sales.sqlite";
+import { saveCashSales, validateCartStock } from "@/db/sales.sqlite";
 import { useCartStore } from "@/store/cart";
 import { Feather } from "@expo/vector-icons";
 import { useState } from "react";
@@ -55,11 +55,10 @@ export default function CartPreview() {
     }
   }
 
-  const getSales = () => {
-    const data = fetchSales()
-    console.log(data)
-    console.log(JSON.stringify(data, null, 2))
-  }
+  const goToCart = () => {
+    router.push("/cart/cart");
+  };
+
 
   return (
     <View>
@@ -160,7 +159,7 @@ export default function CartPreview() {
         <View className="flex-row gap-3">
           <Pressable
             className="flex-1 border border-sky-800 bg-white rounded-xl py-4 active:bg-blue-50"
-            onPress={getSales}
+            onPress={goToCart}
           >
             <Text className="text-center font-semibold text-sky-800">
               VIEW CART
