@@ -24,14 +24,17 @@ import { useCartStore } from '@/store/cart';
 import { CartItem } from '@/types/stock.types';
 import { Feather, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { AlertCircle, Trash2 } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, FlatList, TextInput, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { saveCashSales, saveDigitalSales, validateCartStock } from '@/db/sales.sqlite';
+import SuccessToast from '../(tabs)/home/components/ui/Success';
+import { useAudioPlayer } from 'expo-audio';
+import { PaymentMethod } from '@/types/globals.types';
+import FoldableTips from './tips';
 
 
-
-type SaleMode = 'cash' | 'debt' | 'digital';
 
 // ---------------- Helpers ----------------
 const formatTZS = (n: number) => `TZS ${n.toLocaleString('en-TZ')}`;
@@ -39,12 +42,21 @@ const formatTZS = (n: number) => `TZS ${n.toLocaleString('en-TZ')}`;
 // ---------------- Component ----------------
 export default function ViewCartScreen() {
   const [discount, setDiscount] = useState<number>(0); // flat discount
-  const [saleMode, setSaleMode] = useState<SaleMode>('cash');
+  const [saleMode, setSaleMode] = useState<PaymentMethod>('cash');
+  const [saleAmount, setSaleAmount] = useState<number>(0); // Store sale amount separately
+  const [toastVisible, setToastVisible] = useState(false);
+  const [lastSaleId, setLastSaleId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+
 
   const cart = useCartStore(state => state.items);
   const clearCart = useCartStore(state => state.clearCart);
   const updateQty = useCartStore(state => state.updateQty);
   const removeItem = useCartStore(state => state.removeItem);
+
+  const successSound = useAudioPlayer(require("@/assets/sounds/success.mp3"));
+  
 
 
 
@@ -53,32 +65,32 @@ export default function ViewCartScreen() {
   const speedRef = useRef<number>(300);
 
 
-const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
-  stopHold();
-  Haptics.selectionAsync();
+  const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
+    stopHold();
+    Haptics.selectionAsync();
 
-  speedRef.current = 200;
+    speedRef.current = 200;
 
-  let currentQty = initialQty;
+    let currentQty = initialQty;
 
-  intervalRef.current = setInterval(() => {
-    currentQty += delta;
+    intervalRef.current = setInterval(() => {
+      currentQty += delta;
 
-    updateQty(stockId, currentQty);
+      updateQty(stockId, currentQty);
 
-    // accelerate (min speed = 60ms)
-    speedRef.current = Math.max(60, speedRef.current - 20);
+      // accelerate (min speed = 60ms)
+      speedRef.current = Math.max(60, speedRef.current - 20);
 
-    // restart interval with new speed
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(() => {
-        currentQty += delta;
-        updateQty(stockId, currentQty);
-      }, speedRef.current);
-    }
-  }, speedRef.current);
-};
+      // restart interval with new speed
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(() => {
+          currentQty += delta;
+          updateQty(stockId, currentQty);
+        }, speedRef.current);
+      }
+    }, speedRef.current);
+  };
 
   const stopHold = () => {
     if (intervalRef.current) {
@@ -108,7 +120,67 @@ const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
     };
 
   const saveSale = () => {
-    Alert.alert('Saved', `Sale saved as ${saleMode.toUpperCase()}\nTotal: ${formatTZS(total)}`);
+    const isQtySafe = validateCartStock(cart);
+
+    if(!isQtySafe.isValid) {
+      setErrorMessage(isQtySafe.message || "Insufficient stock for some items");
+      return;
+    }
+    switch(saleMode) {
+      case "cash": 
+        try {
+          // Save the amount BEFORE clearing cart
+          const currentSaleAmount = total;
+          
+          const saleId = saveCashSales(currentSaleAmount, cart);
+          
+          // Store the sale amount for the toast
+          setSaleAmount(currentSaleAmount);
+          setLastSaleId(saleId);
+          setToastVisible(true);
+    
+          if (successSound) {
+            successSound.seekTo(0);
+            successSound.play();
+          }
+    
+          clearCart();
+        } catch (e) {
+          setErrorMessage(`Database error: Could not save sale. ${e}`);
+        }
+      break;
+
+      case "debt": 
+      Alert.alert('Debts', 'Handling debts is coming soon');
+      break;
+
+      case "digital":
+        try {
+          // Save the amount BEFORE clearing cart
+          const currentSaleAmount = total;
+          
+          const saleId = saveDigitalSales(currentSaleAmount, cart);
+          
+          // Store the sale amount for the toast
+          setSaleAmount(currentSaleAmount);
+          setLastSaleId(saleId);
+          setToastVisible(true);
+    
+          if (successSound) {
+            successSound.seekTo(0);
+            successSound.play();
+          }
+    
+          clearCart();
+        } catch (e) {
+          setErrorMessage(`Database error: Could not save sale. ${e}`);
+        }      
+      break;
+
+      case "mixed":
+        Alert.alert('Mixed', 'Handling mixed methods is coming soon');
+      break;
+    }
   };
 
   const markOrder = () => {
@@ -173,6 +245,15 @@ const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
         </View>        
     </View>
     <View className="flex-1 bg-white p-4">
+      <SuccessToast
+        visible={toastVisible}
+        message={`Sale saved — TZS ${saleAmount.toLocaleString()}`} // Use saleAmount, not totalAmount
+        onClose={() => setToastVisible(false)}
+        onReceipt={() => {
+          setToastVisible(false);
+          router.push(`/receipt/${lastSaleId}`);
+        }}
+      />
       {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-xl font-semibold">{cart.length} items</Text>
@@ -187,6 +268,19 @@ const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
           </Text>
         </Pressable>
       </View>
+
+      {/* Error message */}
+      {errorMessage && (
+        <View className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <View className="flex-row items-center gap-2">
+            <Feather name="alert-triangle" size={16} color="#DC2626" />
+            <Text className="text-sm text-red-700 flex-1">{errorMessage}</Text>
+            <Pressable onPress={() => setErrorMessage(null)}>
+              <Feather name="x" size={16} color="#9CA3AF" />
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* Cart List */}
       <FlatList
@@ -231,10 +325,12 @@ const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
           <Text className="text-sm font-semibold">{formatTZS(total)}</Text>
         </View>
       </View>
+      
+      <FoldableTips />
 
       {/* Sale Mode (minimal actions) */}
       <View className="mt-3 flex-row rounded-lg border border-gray-400 overflow-hidden">
-        {(['cash', 'debt', 'digital'] as SaleMode[]).map(m => (
+        {(['cash', 'debt', 'digital', 'mixed'] as PaymentMethod[]).map(m => (
           <Pressable
             key={m}
             onPress={() => setSaleMode(m)}
@@ -289,13 +385,6 @@ const startHold = (stockId: number, initialQty: number, delta: 1 | -1) => {
         </View>
       </View>
 
-      {/* Info  */}
-      <View className="mt-4 flex-row items-start">
-      <AlertCircle size={16} color="#6B7280" className="mt-0.5 mr-2" />
-      <Text className="flex-1 text-gray-500 text-xs leading-relaxed pl-2">
-        Hold +/- buttons for rapid quantity changes
-      </Text>
-    </View>
     </View>
   </>
 }

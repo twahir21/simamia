@@ -11,7 +11,7 @@ export const initSalesDB = () => {
       paidAmount REAL NOT NULL,
       balance REAL NOT NULL,
       paymentType TEXT NOT NULL CHECK (
-        paymentType IN ('cash', 'mobile', 'bank', 'mixed', 'debt')
+        paymentType IN ('cash', 'digital', 'mixed', 'debt')
       ),
       status TEXT NOT NULL CHECK (
         status IN ('paid', 'partial', 'unpaid')
@@ -39,6 +39,15 @@ export const initSaleItemsDB = () => {
 };
 
 
+export const deleteSalesDb = () => {
+  return db.execSync(`
+  DROP TABLE IF EXISTS sales;
+  DROP TABLE IF EXISTS sale_items;
+`);
+}
+
+
+
 export const saveCashSales = (totalAmount: number, cart: CartItem[]) => {
 
   db.execSync("BEGIN TRANSACTION");
@@ -62,6 +71,81 @@ export const saveCashSales = (totalAmount: number, cart: CartItem[]) => {
         totalAmount,
         0,
         "cash",
+        "paid",
+      ]
+    );
+
+    const saleId = saleResult.lastInsertRowId;
+
+    // 2️⃣ Insert sale items + reduce stock
+    for (const item of cart) {
+      // sale_items
+      db.runSync(
+        `
+        INSERT INTO sale_items (
+            saleId,
+            stockId,
+            productName,
+            qty,
+            price,
+            isQuickSale
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+            saleId,
+            item.isQuickSale ? null : item.stockId,
+            item.name,
+            item.qty,
+            item.price,
+            item.isQuickSale ? 1 : 0,
+        ]
+        );
+
+
+      // reduce stock and skip for quick sales
+      if (!item.isQuickSale) {
+        db.runSync(
+          `
+          UPDATE stock
+          SET quantity = quantity - ?
+          WHERE id = ? AND quantity >= ?
+        `,
+          [item.qty, item.stockId, item.qty]
+        );
+      }
+    }
+
+    db.execSync("COMMIT");
+    return saleId;
+  } catch (error) {
+    db.execSync("ROLLBACK");
+    throw error;
+  }
+}
+
+export const saveDigitalSales = (totalAmount: number, cart: CartItem[]) => {
+
+  db.execSync("BEGIN TRANSACTION");
+
+  try {
+    // 1️⃣ Insert sale
+    const saleResult = db.runSync(
+      `
+      INSERT INTO sales (
+        saleNumber,
+        totalAmount,
+        paidAmount,
+        balance,
+        paymentType,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `,
+      [
+        `SALE-${Date.now()}`,
+        totalAmount,
+        totalAmount,
+        0,
+        "digital",
         "paid",
       ]
     );

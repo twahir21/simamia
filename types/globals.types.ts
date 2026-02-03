@@ -19,7 +19,7 @@ export type ActionContext<T> = {
   data: T[];
 };
 
-export type PaymentMethod = 'cash' | 'mobile' | 'bank' | 'debt' | 'mixed';
+export type PaymentMethod = 'cash' | 'digital' | 'debt' | 'mixed';
 export type SaleStatus = 'paid' | 'partial' | 'upaid';
 
 export interface SaleItem {
