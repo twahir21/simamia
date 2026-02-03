@@ -368,6 +368,8 @@ const Orders = () => {
                       </Text>
                     </View>
                   </View>
+
+                  <Text className='mt-3 text-lg font-bold text-gray-700'>Total: TZS 3,000/=</Text>
               </View>
 
               {/* Status Row */}
