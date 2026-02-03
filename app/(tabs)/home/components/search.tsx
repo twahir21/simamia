@@ -13,7 +13,6 @@ import {
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
   Pressable,
-  Modal,
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
@@ -481,7 +480,7 @@ const SmartSearch: React.FC = () => {
       )}
       
       {/* Search Bar */}
-      <View className="relative mb-6 z-40">
+      <View className="relative mb-3 z-40">
         <View className="flex-row items-center bg-gray-100 rounded-2xl px-4 py-1 border border-gray-400">
           <Feather name="search" size={20} color="#9ca3af" />
           <TextInput
@@ -491,6 +490,7 @@ const SmartSearch: React.FC = () => {
             value={searchQuery}
             onChangeText={handleSearch}
             onKeyPress={handleKeyPress}
+            autoCorrect={false} // Recommended for search
             returnKeyType="search"
             onSubmitEditing={() => {
               if (suggestions.length > 0) {
@@ -507,21 +507,9 @@ const SmartSearch: React.FC = () => {
         
         {/* Suggestions Dropdown */}
         {showSuggestions && (
-          <Modal
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowSuggestions(false)}
-          >
-            {/* Backdrop */}
-            <Pressable
-              style={StyleSheet.absoluteFill}
-              onPress={() => setShowSuggestions(false)}
-            />
-        
-            {/* Dropdown */}
-            <View style={styles.dropdown}>
+            <View style={styles.dropdownFixed} className="bg-white rounded-2xl border border-gray-300 shadow-xl">
               {suggestions.length === 0 ? (
-                <View className="flex-1 items-center justify-center px-6">
+                <View className="flex-1 items-center justify-center p-6">
                   <PackageSearch size={48} color="#cbd5e1" />
                   <Text className="text-gray-500 mt-3 text-sm">
                     No item found
@@ -556,7 +544,6 @@ const SmartSearch: React.FC = () => {
               </>
               )}
             </View>
-          </Modal>
         )}
       </View>
       
@@ -648,17 +635,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  dropdown: {
+  dropdownFixed: {
     position: "absolute",
-    top: 178, // adjust to sit below search bar
-    left: 16,
-    right: 16,
-    height: 320, // REAL HEIGHT → scrolling works
-    backgroundColor: "white",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    elevation: 5,
+    top: 55, // Exact height of your search bar
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    elevation: 10, // Higher elevation for Android
+    shadowColor: '#000', // Higher shadow for iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
 });
 

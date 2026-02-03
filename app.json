@@ -20,6 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "pan", 
       "package": "twahir21.learn",
       "permissions": [
         "android.permission.CAMERA",
