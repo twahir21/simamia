@@ -131,30 +131,62 @@ export default function ReceiptPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Receipt ${receipt.receiptNo}</title>
         <style>
+          /* PRINT/PDF SETTINGS */
+          @page {
+            size: auto;           /* Auto-size for thermal printers */
+            margin: 0;            /* No margins for receipt printing */
+          }
+          
+          @media print {
+            @page {
+              size: 80mm auto;   /* Common receipt width: 80mm */
+              margin: 0;
+            }
+            
+            body {
+              margin: 0;
+              padding: 0;
+              width: 80mm;       /* Match receipt paper width */
+            }
+            
+            .receipt {
+              margin: 0;
+              border: none;
+              padding: 10px;
+              width: 80mm;
+              box-shadow: none;  /* Remove shadows for print */
+            }
+          }
+          
+          /* SCREEN DISPLAY STYLING */
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 20px;
             color: #111827;
             display: flex;
-            justify-content: center;   /* horizontal center */
-            align-items: flex-start;   /* NOT center vertically */
+            justify-content: center;
+            align-items: flex-start;
+            background: #f3f4f6;
           }
+          
           .receipt {
-            width: auto;
-            height: auto;
+            width: 80mm;          /* Match receipt printer width */
             margin: 0 auto;
             border: 1px solid #9ca3af;
             border-radius: 8px;
             padding: 20px;
             background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
           }
+          
           .header {
             text-align: center;
             margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 2px dashed #d1d5db;
           }
+          
           .store-name {
             font-size: 24px;
             font-weight: bold;

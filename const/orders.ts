@@ -1,5 +1,5 @@
 // types.ts
-export type DeliveryStatus = 'pending' | 'onway' | 'completed';
+export type DeliveryStatus = 'not-taken' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
 
 export interface Order {
@@ -21,7 +21,7 @@ export const orders: Order[] = [
     code: "C-001",
     date: "2026-01-08",
     time: "14:40",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "pending",
   },
   {
@@ -66,7 +66,7 @@ export const orders: Order[] = [
     code: "C-006",
     date: "2026-01-07",
     time: "13:20",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "cancelled",
   },
   {
@@ -93,7 +93,7 @@ export const orders: Order[] = [
     code: "C-009",
     date: "2026-01-06",
     time: "16:30",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "pending",
   },
   {
@@ -138,7 +138,7 @@ export const orders: Order[] = [
     code: "C-014",
     date: "2026-01-04",
     time: "14:15",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "cancelled",
   },
   {
@@ -165,7 +165,7 @@ export const orders: Order[] = [
     code: "C-017",
     date: "2026-01-03",
     time: "13:25",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "pending",
   },
   {
@@ -201,7 +201,7 @@ export const orders: Order[] = [
     code: "C-021",
     date: "2026-01-01",
     time: "09:10",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "pending",
   },
   {
@@ -228,7 +228,7 @@ export const orders: Order[] = [
     code: "C-024",
     date: "2025-12-31",
     time: "17:15",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "cancelled",
   },
   {
@@ -264,7 +264,7 @@ export const orders: Order[] = [
     code: "C-028",
     date: "2025-12-29",
     time: "16:50",
-    delivery: "pending",
+    delivery: "not-taken",
     payment: "pending",
   },
   {

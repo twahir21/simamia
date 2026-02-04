@@ -17,7 +17,7 @@ import { PhoneCall } from 'lucide-react-native';
 import { useListActions } from '@/helpers/actionHandler.help';
 import ActionBar from './home/components/ui/ActionBar';
 // types/order.ts
-export type DeliveryStatus = 'pending' | 'onway' | 'completed';
+export type DeliveryStatus = 'not-taken' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
 
 export interface Order {
@@ -122,7 +122,7 @@ const Orders = () => {
     const config = {
       pending: { bg: 'bg-amber-100', text: 'text-amber-800', icon: '⏳', label: 'Not Taken' },
       onway: { bg: 'bg-blue-100', text: 'text-blue-800', icon: '🚚', label: 'On the Way' },
-      completed: { bg: 'bg-green-100', text: 'text-green-800', icon: '✅', label: 'Delivered' },
+      completed: { bg: 'bg-green-100', text: 'text-green-800', icon: '✅', label: 'Completed' },
     };
     const { bg, text, icon, label } = config[status];
     return (
@@ -193,7 +193,7 @@ const Orders = () => {
                 >
                   <Text className={order.delivery === status ? 'text-white font-semibold' : 'text-gray-700'}>
                     {status === 'pending' ? 'Not Taken' : 
-                     status === 'onway' ? 'On Way' : 'Delivered'}
+                     status === 'onway' ? 'On Way' : 'Completed'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -465,7 +465,7 @@ const Orders = () => {
                   <Text className={filterBy === option ? 'text-white font-semibold' : 'text-gray-700'}>
                     {option === 'all' ? 'All Orders' :
                      option === 'pending' ? 'Not Taken ⏳' :
-                     option === 'onway' ? 'On the Way 🚚' : 'Delivered ✅'}
+                     option === 'onway' ? 'On the Way 🚚' : 'Completed ✅'}
                   </Text>
                 </TouchableOpacity>
               ))}

@@ -1,0 +1,19 @@
+[
+    {
+        "code": "C-001", 
+        "date": "2026-01-08", 
+        "delivery": "pending", 
+        "id": "1", 
+        "payment": "pending", 
+        "phone": "0712 345 678", 
+        "time": "14:40"
+    }, {
+        "code": "C-002", 
+        "date": "2026-01-08", 
+        "delivery": "onway", 
+        "id": "2", 
+        "payment": "paid", 
+        "phone": "0713 456 789", 
+        "time": "15:20"
+    }
+]
