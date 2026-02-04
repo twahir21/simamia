@@ -1,89 +1,88 @@
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { Clock } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
-type RecentSale = {
+interface RecentProduct {
   id: string;
   name: string;
   price: number;
-  soldAt: number; // timestamp
-};
+  lastSold: string;
+}
 
-// TEMP hardcoded recent sales (latest first)
-const recentSales: RecentSale[] = [
-  {
-    id: "1",
-    name: "Screen Repair",
-    price: 15000,
-    soldAt: Date.now() - 2 * 60 * 1000, // 2 min ago
-  },
-  {
-    id: "2",
-    name: "Battery Change",
-    price: 8000,
-    soldAt: Date.now() - 10 * 60 * 1000,
-  },
-  {
-    id: "3",
-    name: "Phone Unlock",
-    price: 5000,
-    soldAt: Date.now() - 30 * 60 * 1000,
-  },
+const RECENT_SOLD: RecentProduct[] = [
+ { id: 'r1', name: 'Azam Embe 500ml', price: 1200, lastSold: '2m ago' }, { id: 'r2', name: 'White Bread', price: 1500, lastSold: '5m ago' }, { id: 'r3', name: 'Klipiti Small', price: 500, lastSold: '12m ago' }, { id: 'r4', name: 'Mo Extra', price: 600, lastSold: '18m ago' }, { id: 'r5', name: 'Milk Tetra 500ml', price: 3000, lastSold: '22m ago' }, { id: 'r6', name: 'Energy Drink', price: 2500, lastSold: '30m ago' }, { id: 'r7', name: 'Biscuits Pack', price: 2000, lastSold: '35m ago' }, { id: 'r8', name: 'Water 1L', price: 1000, lastSold: '40m ago' }, { id: 'r9', name: 'Sugar 1kg', price: 2500, lastSold: '45m ago' }, { id: 'r10', name: 'Cooking Oil 1L', price: 6000, lastSold: '50m ago' }, { id: 'r11', name: 'Rice 2kg', price: 5000, lastSold: '55m ago' }, { id: 'r12', name: 'Tomato Sauce', price: 3500, lastSold: '1h ago' }, { id: 'r13', name: 'Spaghetti Pack', price: 4000, lastSold: '1h 10m ago' }, { id: 'r14', name: 'Detergent Powder', price: 5000, lastSold: '1h 20m ago' }, { id: 'r15', name: 'Tea Pack', price: 2200, lastSold: '1h 30m ago' },
 ];
 
-function timeAgo(ts: number) {
-  const diff = Math.floor((Date.now() - ts) / 60000);
-  if (diff < 1) return "just now";
-  if (diff < 60) return `${diff} min ago`;
-  const hours = Math.floor(diff / 60);
-  return `${hours}h ago`;
-}
 
-export default function RecentTab() {
-  if (recentSales.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg font-semibold text-slate-700 mb-2">
-          No recent sales
-        </Text>
-        <Text className="text-center text-slate-500">
-          Items you sell will appear here for quick reuse
-        </Text>
-      </View>
-    );
-  }
+
+const RecentTab = () => {
+  
+  const handleResell = async (product: RecentProduct) => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log(`Reselling: ${product.name}`);
+  };
+
+  const MAX_RECENT = 8;
+
+  const visibleRecent = React.useMemo(
+    () => RECENT_SOLD.slice(0, MAX_RECENT),
+    []
+  );
+
 
   return (
-    <FlatList
-      data={recentSales}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={{ padding: 12 }}
-      ItemSeparatorComponent={() => (
-        <View className="h-px bg-slate-200 my-1" />
-      )}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => {
-            // later: add same item to cart
-          }}
-          className="bg-white py-3 px-2 flex-row items-center"
-        >
-          <View className="flex-1">
-            <Text
-              numberOfLines={1}
-              className="font-semibold text-slate-900"
+    <View className="mt-3">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+      >
+        <View className="flex-row flex-wrap -mx-2">
+          {visibleRecent.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => handleResell(item)}
+              activeOpacity={0.9}
+              className="w-1/2 px-2 mb-4"
             >
-              {item.name}
-            </Text>
-            <Text className="text-xs text-slate-500 mt-0.5">
-              {timeAgo(item.soldAt)}
-            </Text>
-          </View>
+              {/* Main Card — UNCHANGED */}
+              <View className="bg-slate-900 rounded-3xl py-3 px-5 shadow-xl shadow-slate-300 relative overflow-hidden">
+                
+                {/* Decorative background element */}
+                <View className="absolute -top-10 -right-10 w-24 h-20 bg-blue-500/20 rounded-full" />
+                
+                <View className="flex-row justify-between items-start mb-3">
+                  <View className="bg-white/10 px-2 py-1 rounded-lg">
+                    <Text className="text-white/60 text-[9px] font-bold uppercase">
+                      {item.lastSold}
+                    </Text>
+                  </View>
+                  <Clock size={14} color="rgba(255,255,255,0.3)" />
+                </View>
 
-          <Text className="font-bold text-slate-700">
-            {Intl.NumberFormat("en-TZ").format(item.price)}
+                <Text numberOfLines={1} className="text-white font-bold text-sm mb-1">
+                  {item.name}
+                </Text>
+                
+                <Text className="text-blue-400 font-black text-xs mb-2">
+                  {item.price.toLocaleString()} TZS
+                </Text>
+
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {RECENT_SOLD.length > MAX_RECENT && (
+          <Text className="text-center text-xs text-slate-400 mt-2">
+            Showing last {MAX_RECENT} items 
           </Text>
-        </TouchableOpacity>
-      )}
-    />
+        )}
+
+      </ScrollView>
+
+    </View>
   );
-}
+};
+
+export default RecentTab;

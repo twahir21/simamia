@@ -1,76 +1,124 @@
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Trophy, TrendingUp } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
-type Product = {
+interface PopularProduct {
   id: string;
   name: string;
-  price?: number;
-  soldCount: number;
-};
+  price: number;
+  sold: number;
+}
 
-// TEMP hardcoded popular items
-const popularItems: Product[] = [
-  { id: "1", name: "Screen Repair", price: 15000, soldCount: 128 },
-  { id: "2", name: "Battery Change", price: 8000, soldCount: 96 },
-  { id: "3", name: "Phone Unlock", price: 5000, soldCount: 72 },
-  { id: "4", name: "Charging Port Fix", price: 12000, soldCount: 54 },
-  { id: "5", name: "Software Install", price: 6000, soldCount: 41 },
+const POPULAR_PRODUCTS: PopularProduct[] = [
+  { id: '1', name: 'Water 500ml', price: 600, sold: 510 },
+  { id: '2', name: 'Coca Cola', price: 1500, sold: 342 },
+  { id: '3', name: 'Biscuits', price: 2000, sold: 265 },
+  { id: '4', name: 'Milk Tetra', price: 3000, sold: 198 },
+  { id: '5', name: 'Energy Drink', price: 2500, sold: 176 },
 ];
 
-// Sort ONCE (important)
-const sortedPopular = [...popularItems].sort(
-  (a, b) => b.soldCount - a.soldCount
-);
-
-export default function PopularTab() {
-  if (sortedPopular.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg font-semibold text-slate-700 mb-2">
-          No sales data yet
-        </Text>
-        <Text className="text-center text-slate-500">
-          Popular items will appear here as you make sales
-        </Text>
-      </View>
-    );
-  }
-
+const PopularTab = () => {
   return (
-    <FlatList
-      data={sortedPopular}
-      keyExtractor={(item) => item.id}
-      numColumns={2}
-      contentContainerStyle={{ padding: 12 }}
-      columnWrapperStyle={{ gap: 12 }}
-      renderItem={({ item, index }) => (
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => {
-            // later: add to cart
-          }}
-          className="flex-1 bg-amber-50 border border-amber-200 rounded-2xl p-4 min-h-[90px]"
-        >
-          {/* Rank badge */}
-          <View className="absolute top-2 right-2 bg-amber-200 rounded-full px-2 py-0.5">
-            <Text className="text-xs font-bold text-amber-800">
-              #{index + 1}
-            </Text>
+    <View className="mt-4 px-4">
+      {/* HEADER */}
+      <View className="flex-row items-center justify-between mb-4">
+        <View className="flex-row items-center">
+          <View className="bg-blue-100 p-1.5 rounded-lg">
+            <TrendingUp size={18} color="#2563eb" />
           </View>
-
-          <Text
-            numberOfLines={2}
-            className="font-semibold text-slate-900 mb-1"
-          >
-            {item.name}
+          <Text className="ml-3 font-black text-slate-800 text-lg tracking-tight">
+            Top Sellers
           </Text>
+        </View>
+        <View className="bg-slate-100 px-3 py-1 rounded-full">
+          <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+            Today
+          </Text>
+        </View>
+      </View>
 
-          {item.price != null && (
-            <Text className="text-amber-700 font-bold mt-auto">
-              {Intl.NumberFormat("en-TZ").format(item.price)}
-            </Text>
-          )}
-        </TouchableOpacity>
-      )}
-    />
+      {/* LIST */}
+      <View className="gap-2">
+        {POPULAR_PRODUCTS.map((item, index) => {
+          const isTop = index === 0;
+          const isSecond = index === 1;
+
+          return (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.7}
+              onPress={() => console.log('Quick sell:', item.name)}
+              className={`flex-row items-center justify-between p-4 rounded-[24px] border-b-4 border ${
+                isTop
+                  ? 'bg-amber-50 border-amber-200'
+                  : isSecond ?  'bg-white border-slate-700' : 'bg-white border-slate-400'
+              } shadow-sm mb-2`}
+              style={{ borderBottomWidth: 4 }} // Adds a tactile "button" feel
+            >
+              {/* LEFT: Rank and Info */}
+              <View className="flex-row items-center flex-1">
+                <View
+                  className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${
+                    isTop 
+                      ? 'bg-amber-400 rotate-[-10deg]' 
+                      : isSecond ? 'bg-slate-700 rotate-[-10deg]' : 'bg-slate-300'
+                  }`}
+                >
+                  <Text
+                    className={`font-black text-base ${
+                      isTop || isSecond ? 'text-white' : 'text-slate-500'
+                    }`}
+                  >
+                    {index + 1}
+                  </Text>
+                </View>
+
+                <View className="flex-1">
+                  <Text
+                    numberOfLines={1}
+                    className={`font-bold text-base ${
+                      isTop ? 'text-amber-900' : 'text-slate-800'
+                    }`}
+                  >
+                    {item.name}
+                  </Text>
+                  <View className="flex-row items-center">
+                    <Text className="text-blue-600 font-bold text-xs">
+                      {item.price.toLocaleString()} /=
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* RIGHT: Stats and Action */}
+              <View className="flex-row items-center">
+                <View className="items-end mr-3">
+                   {isTop ? (
+                     <View className="bg-amber-200/50 px-2 py-0.5 rounded-md flex-row items-center">
+                        <Trophy size={10} color="#b45309" />
+                        <Text className="text-[10px] font-black text-amber-800 ml-1">
+                          {item.sold}
+                        </Text>
+                     </View>
+                   ) : (
+                    <Text className="text-[10px] font-bold text-slate-400 uppercase">
+                      {item.sold} Sold
+                    </Text>
+                   )}
+                </View>
+
+                
+                <View className={`p-2 rounded-full ${isTop ? 'bg-amber-400' : 'bg-slate-800'}`}>
+                  <MaterialIcons name="local-fire-department" size={16} color="white" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
   );
-}
+};
+
+export default PopularTab;
