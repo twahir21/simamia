@@ -2,22 +2,28 @@ import { ActionContext } from "@/types/globals.types";
 import { Alert } from "react-native";
 import * as Print from 'expo-print';
 import { generateCustomerHTML, generateOrderHTML, generateSalesHTML, generateStockHTML } from "./html";
+import { StockPdf } from "@/types/files.types";
+import { exportStockToCSV } from "./csv";
 
+type ModuleType = "sales" | "stock" | "customers" | "orders";
 
 export const useListActions = <T,>(context: ActionContext<T>) => {
-  const handleExport = async () => {
-    // Example: CSV export
-    console.log(`Exporting ${context.module}`, context.data);
 
-    // later:
-    // exportToCSV(context.data, `${context.module}-export.csv`);
-  };
+const handleExport = async () => {
+  const fileName = `stock-report-${new Date().toISOString().split('T')[0]}.csv`;
+  
+  try {
+    exportStockToCSV(context.data as StockPdf[], fileName);
+    console.log("Export successful");
+  } catch (error) {
+    console.error("Export failed", error);
+  }
+};
 
   // Define a type for the available modules
-  type ModuleType = "sales" | "stock" | "customers" | "orders";
 
   // Create the map
-  const htmlGenerators: Record<ModuleType, (data: any) => string> = {
+  const htmlGenerators: Record<ModuleType, (data: StockPdf | any) => string> = {
     stock: generateStockHTML,
     sales: generateSalesHTML,
     customers: generateCustomerHTML,

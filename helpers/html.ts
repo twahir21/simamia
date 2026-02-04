@@ -1,15 +1,4 @@
-interface StockPdf {
-  id: number;
-  productName: string;
-  batchNumber: string;
-  buyingPrice: number;
-  sellingPrice: number;
-  quantity: number;
-  minStock: number;
-  status: string;
-  lastUpdate: string;
-  location: string;
-}
+import { StockPdf } from "@/types/files.types";
 
 interface OrderPdf {
     code: string;

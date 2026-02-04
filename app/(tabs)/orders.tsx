@@ -17,7 +17,7 @@ import { PhoneCall } from 'lucide-react-native';
 import { useListActions } from '@/helpers/actionHandler.help';
 import ActionBar from './home/components/ui/ActionBar';
 // types/order.ts
-export type DeliveryStatus = 'not-taken' | 'onway' | 'completed';
+export type DeliveryStatus = 'pending' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
 
 export interface Order {
