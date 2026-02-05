@@ -1084,7 +1084,7 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
             </View>
             <InputField label="QR/Bar Code" icon={Hash} placeholder="Scan or type code" value={form.qrCode} onChangeText={(t: string) => setForm({...form, qrCode: t})} />
             {/* <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} /> */}
-                        {/* Expiry Date  */}
+            {/* Expiry Date  */}
             <View className="mb-4">
               <Text className="text-slate-600 font-bold text-xs uppercase tracking-widest mb-1">Expiry Date</Text>
               
