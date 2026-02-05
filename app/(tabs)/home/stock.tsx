@@ -193,7 +193,7 @@ export default function Stock() {
             >
               <PlusCircle size={16} color="#2563eb" />
               <Text className="text-blue-600 font-bold ml-2 text-xs">
-                Add to Order
+                Add to Restock
               </Text>
             </TouchableOpacity>
 

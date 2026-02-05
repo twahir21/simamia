@@ -5,22 +5,9 @@ import { generateCustomerHTML, generateOrderHTML, generateSalesHTML, generateSto
 import { StockPdf } from "@/types/files.types";
 import { exportStockToCSV } from "./csv";
 
-type ModuleType = "sales" | "stock" | "customers" | "orders";
+  export type ModuleType = "sales" | "stock" | "customers" | "orders";
+  export type FilterOption = { label: string; value: string; color?: string; icon?: string };
 
-export const useListActions = <T,>(context: ActionContext<T>) => {
-
-const handleExport = async () => {
-  const fileName = `stock-report-${new Date().toISOString().split('T')[0]}.csv`;
-  
-  try {
-    exportStockToCSV(context.data as StockPdf[], fileName);
-    console.log("Export successful");
-  } catch (error) {
-    console.error("Export failed", error);
-  }
-};
-
-  // Define a type for the available modules
 
   // Create the map
   const htmlGenerators: Record<ModuleType, (data: StockPdf | any) => string> = {
@@ -30,47 +17,127 @@ const handleExport = async () => {
     orders: generateOrderHTML,
   };
 
-  const handlePrint = async () => {
-    const moduleName = context.module as ModuleType;
-    
-    try {
-      console.log("Module: ", moduleName);
-
-      // 1. Check if a generator exists for this module
-      const generator = htmlGenerators[moduleName];
-      
-      if (!generator) {
-        throw new Error(`No HTML generator found for module: ${moduleName}`);
-      }
-
-      // 2. Generate the specific HTML
-      const htmlContent = generator(context.data);
-
-      // 3. Create the PDF file
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-        base64: false,
-      });
-
-      // 4. Send to the printer
-      await Print.printAsync({ uri });
-
-      console.log(`${moduleName} Print successful`);
-    } catch (error) {
-      console.error(`Error printing ${moduleName}:`, error);
-      Alert.alert('Print Error', `Could not generate the ${moduleName} report.`);
+  export const MODULE_FILTERS: Record<ModuleType, { title: string; sections: { title: string; key: string; options: FilterOption[] }[] }> = {
+    orders: {
+      title: "Filter Orders",
+      sections: [
+        {
+          title: "Delivery Status",
+          key: "delivery",
+          options: [
+            { label: "All Orders", value: "all" },
+            { label: "Not Taken ⏳", value: "pending" },
+            { label: "On the Way 🚚", value: "onway" },
+            { label: "Completed ✅", value: "completed" },
+          ]
+        },
+        {
+          title: "Payment Status",
+          key: "payment",
+          options: [
+            { label: "💳 Unpaid", value: "unpaid", color: "bg-red-500" }
+          ]
+        }
+      ]
+    },
+    stock: {
+      title: "Inventory Filter",
+      sections: [
+        {
+          title: "Availability",
+          key: "status",
+          options: [
+            { label: "All Items", value: "all" },
+            { label: "Low Stock ⚠️", value: "low" },
+            { label: "Out of Stock 🚫", value: "out" },
+            { label: "Expired 🍄", value: "expired" },
+          ]
+        }
+      ]
+    },
+    sales: {
+      title: "Sales History",
+      sections: [
+        {
+          title: "Method",
+          key: "paymentType",
+          options: [
+            { label: "Cash 💵", value: "cash" },
+            { label: "Digital 📱", value: "digital" },
+            { label: "Debt 📝", value: "debt" },
+          ]
+        }
+      ]
+    },
+    customers: {
+      title: "Customer List",
+      sections: [
+        {
+          title: "Balance",
+          key: "debt",
+          options: [
+            { label: "All", value: "all" },
+            { label: "Has Debt 🚩", value: "hasDebt" },
+          ]
+        }
+      ]
     }
   };
 
-  const openFilter = () => {
-    console.log(`Open filter for ${context.module}`);
-    // setFilterModal({ module: context.module })
-  };
+  export const useListActions = <T,>(context: ActionContext<T>) => {
 
-  const openSort = () => {
-    console.log(`Open sort for ${context.module}`);
-    // setSortModal({ module: context.module })
-  };
+    const openFilter = () => {
+      console.log(`Open filter for ${context.module}`);
+      // setFilterModal({ module: context.module })
+    };
+
+    const handleExport = async () => {
+      const fileName = `stock-report-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      try {
+        exportStockToCSV(context.data as StockPdf[], fileName);
+        console.log("Export successful");
+      } catch (error) {
+        console.error("Export failed", error);
+      }
+    };
+
+    const handlePrint = async () => {
+      const moduleName = context.module as ModuleType;
+      
+      try {
+        console.log("Module: ", moduleName);
+
+        // 1. Check if a generator exists for this module
+        const generator = htmlGenerators[moduleName];
+        
+        if (!generator) {
+          throw new Error(`No HTML generator found for module: ${moduleName}`);
+        }
+
+        // 2. Generate the specific HTML
+        const htmlContent = generator(context.data);
+
+        // 3. Create the PDF file
+        const { uri } = await Print.printToFileAsync({
+          html: htmlContent,
+          base64: false,
+        });
+
+        // 4. Send to the printer
+        await Print.printAsync({ uri });
+
+        console.log(`${moduleName} Print successful`);
+      } catch (error) {
+        console.error(`Error printing ${moduleName}:`, error);
+        Alert.alert('Print Error', `Could not generate the ${moduleName} report.`);
+      }
+    };
+
+    const openSort = () => {
+      console.log(`Open sort for ${context.module}`);
+      // setSortModal({ module: context.module })
+    };
 
   return {
     handleExport,
