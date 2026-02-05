@@ -9,6 +9,11 @@ import * as Haptics from 'expo-haptics';
 import { useListActions } from '@/helpers/actionHandler.help';
 import ActionBar from './components/ui/ActionBar';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useGlobalFilter } from '@/hooks/filter.hook';
+import GlobalFilterModal from './components/globalFilter';
+import { applyFilters } from '@/configs/filter.config';
+import { applySort } from '@/configs/sort.config';
+import GlobalSortModal from './components/globalSort';
 
 const generateStockBatch = (supplierName?: string): string => {
   // 1. Get first 15 letters of supplier (uppercase)
@@ -212,6 +217,8 @@ export default function Stock() {
   
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+const [sortVisible, setSortVisible] = useState(false);
+const [sortRule, setSortRule] = useState<string>();
 
   // actions
   const actions = useListActions({
@@ -239,6 +246,18 @@ export default function Stock() {
     return () => clearTimeout(timeout);
   }, [query]);
 
+  // global filter
+  const globalFilter = useGlobalFilter();
+
+  const filteredStocks = applyFilters(
+    STOCKS,
+    globalFilter.filters
+  );
+
+  const sortedData = applySort(filteredStocks, "name_asc");
+  
+  
+  console.log("Sorted Data: ", sortedData)
 
   return (
     <View className="flex-1 bg-slate-50 pt-4 relative">
@@ -277,7 +296,7 @@ export default function Stock() {
       </View>
       </>): 
       (<FlatList
-        data={STOCKS}
+        data={filteredStocks}
         renderItem={renderStockCard}
         keyExtractor={item => item.id}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -307,13 +326,13 @@ export default function Stock() {
               key: "filter",
               label: "Filter",
               icon: <Ionicons name="filter" size={20} color="#4B5563" />,
-              onPress: actions.openFilter,
+              onPress: () => globalFilter.open("stock")
             },
             {
               key: "sort",
               label: "Sort",
               icon: <MaterialIcons name="sort" size={20} color="#4B5563" />,
-              onPress: actions.openSort,
+              onPress: () => setSortVisible(true)
             },
             {
               key: "print",
@@ -348,6 +367,25 @@ export default function Stock() {
         onClose={() => { setShowEditModal(false); setEditingStock(null) }}
         onSuccess={() => { refreshStocks(); setEditingStock(null); setShowEditModal(false); }} 
       />
+
+      {/* Global filter modal */}
+      <GlobalFilterModal
+        visible={globalFilter.visible}
+        module={globalFilter.module}
+        active={globalFilter.filters}
+        onSelect={globalFilter.select}
+        onClose={globalFilter.close}
+        onApply={globalFilter.close}
+      />
+
+      <GlobalSortModal
+        visible={sortVisible}
+        module="stock"
+        selected={sortRule}
+        onSelect={(v) => setSortRule(v)}
+        onClose={() => setSortVisible(false)}
+      />
+
 
     </View>
   );

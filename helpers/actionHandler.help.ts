@@ -7,6 +7,10 @@ import { exportStockToCSV } from "./csv";
 
   export type ModuleType = "sales" | "stock" | "customers" | "orders";
   export type FilterOption = { label: string; value: string; color?: string; icon?: string };
+  export type SortOption = {
+    label: string;
+    value: string;
+  };
 
 
   // Create the map
@@ -83,6 +87,51 @@ import { exportStockToCSV } from "./csv";
       ]
     }
   };
+
+  export const MODULE_SORTS: Record<
+    ModuleType,
+    { title: string; options: SortOption[] }
+  > = {
+    stock: {
+      title: "Sort Inventory",
+      options: [
+        { label: "Name A-Z", value: "name_asc" },
+        { label: "Name Z-A", value: "name_desc" },
+        { label: "Quantity Low → High", value: "qty_asc" },
+        { label: "Quantity High → Low", value: "qty_desc" },
+        { label: "Price Low → High", value: "price_asc" },
+        { label: "Price High → Low", value: "price_desc" },
+        { label: "Newest", value: "newest" },
+        { label: "Oldest", value: "oldest" },
+      ],
+    },
+
+    sales: {
+      title: "Sort Sales",
+      options: [
+        { label: "Newest First", value: "date_desc" },
+        { label: "Oldest First", value: "date_asc" },
+        { label: "Amount High → Low", value: "amount_desc" },
+      ],
+    },
+
+    customers: {
+      title: "Sort Customers",
+      options: [
+        { label: "Name A-Z", value: "name_asc" },
+        { label: "Debt High → Low", value: "debt_desc" },
+      ],
+    },
+
+    orders: {
+      title: "Sort Orders",
+      options: [
+        { label: "Newest", value: "date_desc" },
+        { label: "Delivery Priority", value: "priority" },
+      ],
+    },
+  };
+
 
   export const useListActions = <T,>(context: ActionContext<T>) => {
 

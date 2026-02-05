@@ -16,6 +16,9 @@ import { orders } from '@/const/orders';
 import { PhoneCall } from 'lucide-react-native';
 import { useListActions } from '@/helpers/actionHandler.help';
 import ActionBar from './home/components/ui/ActionBar';
+import { useGlobalFilter } from '@/hooks/filter.hook';
+import GlobalFilterModal from './home/components/globalFilter';
+import { applyFilters } from '@/configs/filter.config';
 // types/order.ts
 export type DeliveryStatus = 'pending' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
@@ -40,6 +43,9 @@ const Orders = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [ordersList, setOrdersList] = useState<Order[]>(orders);
+
+  const globalFilter = useGlobalFilter();
+
 
   // Filter and sort logic
   const filteredOrders = useMemo(() => {
@@ -239,7 +245,13 @@ const Orders = () => {
   const actions = useListActions({
     module: "orders",
     data: ordersList
-  })
+  });
+
+  const filteredOrdersH = applyFilters(
+    ordersList,
+    globalFilter.filters
+  );
+
 
   return (
     <SafeAreaView className="flex-1">
@@ -317,7 +329,7 @@ const Orders = () => {
             <Text className="text-gray-400 mt-2">Try changing your search or filter</Text>
           </View>
         ) : (
-          filteredOrders.map(order => (
+          filteredOrdersH.map(order => (
             <View
               key={order.id}
               className="bg-white rounded-2xl shadow-sm border border-sky-500 mb-8 overflow-hidden"
@@ -415,7 +427,7 @@ const Orders = () => {
             key: "filter",
             label: "Filter",
             icon: <Ionicons name="filter" size={20} color="#4B5563" />,
-            onPress: actions.openFilter,
+            onPress: () => globalFilter.open("orders"),
           },
           {
             key: "sort",
@@ -431,6 +443,16 @@ const Orders = () => {
           },
         ]}
       />
+
+      <GlobalFilterModal
+        visible={globalFilter.visible}
+        module={globalFilter.module}
+        active={globalFilter.filters}
+        onSelect={globalFilter.select}
+        onClose={globalFilter.close}
+        onApply={globalFilter.close}
+      />
+
 
 
       {/* Filter Modal */}
