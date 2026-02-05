@@ -181,3 +181,19 @@ export const stockAnalysis = () => {
   };
 };
 
+// 1. Sorting by Expiry
+
+// To find products expiring soonest:
+// SQL
+
+// SELECT * FROM stock 
+// WHERE expiryDate IS NOT NULL 
+// ORDER BY expiryDate ASC;
+
+// 2. Filtering Expired Products
+
+// To find everything that has already expired as of today:
+// SQL
+
+// SELECT * FROM stock 
+// WHERE expiryDate < DATE('now');

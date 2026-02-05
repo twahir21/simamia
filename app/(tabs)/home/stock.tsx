@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, FlatList, Pressable, Modal, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Search, Package, AlertTriangle, XCircle, Edit3, PlusCircle, Trash2, MapPin, Tag, Plus, Truck, Hash, Calendar, Target, X, Download, PackageSearch } from 'lucide-react-native';
 import { deleteStock, fetchAllStock, saveStock, searchStock, stockAnalysis, updateStock } from '@/db/stock.sqlite';
 import { FetchStock, StockInput } from '@/types/stock.types';
@@ -8,6 +8,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import { useListActions } from '@/helpers/actionHandler.help';
 import ActionBar from './components/ui/ActionBar';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 const generateStockBatch = (supplierName?: string): string => {
   // 1. Get first 15 letters of supplier (uppercase)
@@ -428,7 +429,35 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
   );
 
   const [importVisible, setImportVisible] = useState(false);
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
 
+  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    // 1. If user hits 'Cancel' on Android
+    if (event.type === 'dismissed') {
+      setShow(false);
+      return;
+    }
+
+    if (Platform.OS === 'android') setShow(false);
+
+    if (selectedDate) {
+      setDate(selectedDate);
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const isoDate = `${year}-${month}-${day}`;
+    
+      // Sync with main form state
+      setForm({ ...form, expiryDate: isoDate });
+      setDate(selectedDate);
+    }
+  };
+
+  const clearDate = () => {
+    setForm({ ...form, expiryDate: '' }); // Reset form field    
+    setDate(new Date());    // Resets the internal picker state
+  };
 
   return <>
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -543,7 +572,44 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
               </View>
             </View>
             <InputField label="QR/Bar Code" icon={Hash} placeholder="Scan or type code" value={form.qrCode} onChangeText={(t: string) => setForm({...form, qrCode: t})} />
-            <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} />
+            {/* Expiry Date  */}
+            <View className="mb-4">
+              <Text className="text-slate-600 font-bold text-xs uppercase tracking-widest mb-1">Expiry Date</Text>
+              
+              <View className="flex-row items-center">
+                <TouchableOpacity 
+                  onPress={() => setShow(true)}
+                  className={`flex-row items-center bg-white border p-4 rounded-xl shadow-sm flex-1 ${
+                    form.expiryDate ? 'border-sky-500' : 'border-slate-300'
+                  }`}
+                >
+                  <Calendar size={20} color={form.expiryDate ? "#2563eb" : "#64748b"} />
+                  <Text className={`ml-3 font-medium ${form.expiryDate ? 'text-slate-800' : 'text-slate-400'}`}>
+                    {form.expiryDate || 'No Expiry Set'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* RESET BUTTON - Only shows if a date is selected */}
+                {form.expiryDate && (
+                  <TouchableOpacity 
+                    onPress={clearDate}
+                    className="ml-2 bg-red-50 p-4 rounded-xl border border-red-100"
+                  >
+                    <X size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {show && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onChange}
+                  minimumDate={new Date()}
+                />
+              )}
+            </View>            
             <InputField label="Target Max Stock" icon={Target} keyboardType="numeric" placeholder="1000" value={form.targetMax} onChangeText={(t: string) => setForm({...form, targetMax: Number(t)})} />
 
           </ScrollView>
@@ -571,10 +637,10 @@ function AddStockModal({ visible, onClose, onSuccess }: { visible: boolean; onCl
             {/* SAVE BUTTON - The Primary Action */}
             <Pressable 
               onPress={handleSubmit} 
-              className="flex-[2] bg-emerald-600 py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-200"
+              className="flex-[2] bg-sky-800 py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-200"
             >
               <Ionicons name="save" size={20} color="white" />
-              <Text className="font-bold text-white ml-2 text-lg">Save Product</Text>
+              <Text className="font-bold text-white ml-2 text-lg">Save Stock</Text>
             </Pressable>
           </View>
 
@@ -866,7 +932,35 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
       </View>
     </View>
   );
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
 
+  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    // 1. If user hits 'Cancel' on Android
+    if (event.type === 'dismissed') {
+      setShow(false);
+      return;
+    }
+
+    if (Platform.OS === 'android') setShow(false);
+
+    if (selectedDate) {
+      setDate(selectedDate);
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const isoDate = `${year}-${month}-${day}`;
+    
+      // Sync with main form state
+      setForm({ ...form, expiryDate: isoDate });
+      setDate(selectedDate);
+    }
+  };
+
+  const clearDate = () => {
+    setForm({ ...form, expiryDate: '' }); // Reset form field    
+    setDate(new Date());    // Resets the internal picker state
+  };
   return <>
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 bg-black/60 justify-end">
@@ -989,7 +1083,45 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
               </View>
             </View>
             <InputField label="QR/Bar Code" icon={Hash} placeholder="Scan or type code" value={form.qrCode} onChangeText={(t: string) => setForm({...form, qrCode: t})} />
-            <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} />
+            {/* <InputField label="Expiry Date" icon={Calendar} placeholder="YYYY-MM-DD" value={form.expiryDate} onChangeText={(t: string) => setForm({...form, expiryDate: t})} /> */}
+                        {/* Expiry Date  */}
+            <View className="mb-4">
+              <Text className="text-slate-600 font-bold text-xs uppercase tracking-widest mb-1">Expiry Date</Text>
+              
+              <View className="flex-row items-center">
+                <TouchableOpacity 
+                  onPress={() => setShow(true)}
+                  className={`flex-row items-center bg-white border p-4 rounded-xl shadow-sm flex-1 ${
+                    form.expiryDate ? 'border-sky-500' : 'border-slate-300'
+                  }`}
+                >
+                  <Calendar size={20} color={form.expiryDate ? "#2563eb" : "#64748b"} />
+                  <Text className={`ml-3 font-medium ${form.expiryDate ? 'text-slate-800' : 'text-slate-400'}`}>
+                    {form.expiryDate || 'No Expiry Set'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* RESET BUTTON - Only shows if a date is selected */}
+                {form.expiryDate && (
+                  <TouchableOpacity 
+                    onPress={clearDate}
+                    className="ml-2 bg-red-50 p-4 rounded-xl border border-red-100"
+                  >
+                    <X size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {show && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onChange}
+                  minimumDate={new Date()}
+                />
+              )}
+            </View>   
             <InputField label="Target Max Stock" icon={Target} keyboardType="numeric" placeholder="1000" value={form.targetMax?.toLocaleString()} onChangeText={(t: string) => setForm({...form, targetMax: Number(t)})} />
 
           </ScrollView>
@@ -1008,10 +1140,10 @@ function EditStockModal({ visible, onClose, onSuccess, stock }: { visible: boole
             {/* SAVE BUTTON - The Primary Action */}
             <Pressable 
               onPress={() => handleEditSubmit(stock ? Number(stock.id) : 0)} 
-              className="flex-[2] bg-emerald-600 py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-200"
+              className="flex-[2] bg-sky-800 py-4 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-200"
             >
               <Ionicons name="save" size={20} color="white" />
-              <Text className="font-bold text-white ml-2 text-lg">Save Product</Text>
+              <Text className="font-bold text-white ml-2 text-lg">Update Stock</Text>
             </Pressable>
           </View>
 
