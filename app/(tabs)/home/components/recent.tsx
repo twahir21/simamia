@@ -1,16 +1,21 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
+  StyleSheet,
+  Animated
 } from 'react-native';
 import { Clock, Package } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getRecentSoldProducts } from '@/db/analysis.sqlite';
 import { useFocusEffect } from 'expo-router';
 import { timeAgo } from '@/helpers/timeAgo';
+import { useCartStore } from '@/store/cart';
+import { addToCart } from '@/db/stock.sqlite';
+import { Feather } from '@expo/vector-icons';
 
 interface RecentProduct {
   id: number;
@@ -32,32 +37,37 @@ const MAX_RECENT = 10;
 const RecentTab = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [recentProducts, setRecentProducts] = useState<RecentProduct[]>([]);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [feedbackProduct, setFeedbackProduct] = useState<RecentProduct | null>(null);
+  
 
-  const handleResell = async (product: RecentProduct) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log(`Reselling: ${product.productName}`);
-  };
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const lastAddTime = useRef<number>(0);
+  
+  
+  // Store
+  const addItem = useCartStore(state => state.addItem);
 
-const fetchData = useCallback(() => {
-  try {
-    const raw = (getRecentSoldProducts() ?? []) as RecentProductRow[];
+  const fetchData = useCallback(() => {
+    try {
+      const raw = (getRecentSoldProducts() ?? []) as RecentProductRow[];
 
-    const normalized: RecentProduct[] = raw
-      .filter((i): i is RecentProductRow & { id: number } => i.id !== null)
-      .map(i => ({
-        id: i.id,
-        productName: i.productName,
-        price: i.price,
-        lastSold: i.lastSold,
-      }))
-      .slice(0, MAX_RECENT);
+      const normalized: RecentProduct[] = raw
+        .filter((i): i is RecentProductRow & { id: number } => i.id !== null)
+        .map(i => ({
+          id: i.id,
+          productName: i.productName,
+          price: i.price,
+          lastSold: i.lastSold,
+        }))
+        .slice(0, MAX_RECENT);
 
-    setRecentProducts(normalized);
-  } catch (err) {
-    console.warn('Failed to load recent products', err);
-    setRecentProducts([]);
-  }
-}, []);
+      setRecentProducts(normalized);
+    } catch (err) {
+      console.warn('Failed to load recent products', err);
+      setRecentProducts([]);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +80,53 @@ const fetchData = useCallback(() => {
     fetchData();
     setRefreshing(false);
   }, [fetchData]);
+
+  const saveToCart = (product: RecentProduct) => {
+      const now = Date.now();
+      if (now - lastAddTime.current < 500) return; // Prevent rapid tapping
+      if (isAdding) return;
+      
+      lastAddTime.current = now;
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  
+  
+      // Show feedback
+      setFeedbackProduct(product);
+      fadeAnim.setValue(0);
+      
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setTimeout(() => {
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            setFeedbackProduct(null);
+          });
+        }, 1500);
+      });
+  
+      // Reset adding state
+      setTimeout(() => setIsAdding(false), 500);
+      
+      // adds to global cart
+      const stockFromDb = addToCart(Number(product.id));
+  
+      if (stockFromDb) {
+        addItem({
+          stockId: stockFromDb.id,
+          name: stockFromDb.productName,
+          price: stockFromDb.sellingPrice,
+          qty: 1
+        })
+      }
+    }
+  
 
   const isEmpty = recentProducts.length === 0;
 
@@ -86,6 +143,20 @@ const fetchData = useCallback(() => {
             : { paddingHorizontal: 20, paddingBottom: 20 }
         }
       >
+        {/* Feedback Toast */}
+        {feedbackProduct && (
+          <Animated.View 
+            style={[styles.feedbackToast, { opacity: fadeAnim }]}
+            className="absolute top-2 left-4 right-4 bg-green-50 border border-green-200 rounded-xl p-4 flex-row items-center z-50"
+          >
+            <Feather name="check-circle" size={24} color="#10b981" />
+            <View className="ml-3 flex-1">
+              <Text className="text-green-800 font-semibold">Added to cart!</Text>
+              <Text className="text-green-700 text-sm">{feedbackProduct.productName}</Text>
+            </View>
+            <Text className="text-green-600 font-bold">{feedbackProduct.price.toLocaleString()} TZS</Text>
+          </Animated.View>
+        )}
         {/* EMPTY STATE */}
         {isEmpty ? (
           <View className="items-center px-8">
@@ -108,7 +179,7 @@ const fetchData = useCallback(() => {
               {recentProducts.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  onPress={() => handleResell(item)}
+                  onPress={() => saveToCart(item)}
                   activeOpacity={0.9}
                   className="w-1/2 px-2 mb-4"
                 >
@@ -150,5 +221,15 @@ const fetchData = useCallback(() => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  feedbackToast: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
 
 export default RecentTab;

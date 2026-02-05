@@ -59,7 +59,7 @@ const PinnedTab = () => {
   const [search, setSearch] = useState('');
   const [isHydrated, setIsHydrated] = useState(false); // New Guard State
   const [isLoading, setIsLoading] = useState(true);
-    const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
 
   const [feedbackProduct, setFeedbackProduct] = useState<Product | null>(null);
 
@@ -117,7 +117,7 @@ const PinnedTab = () => {
         qty: 1
       })
     }
-}
+  }
 
 
     // 1. LOAD: Run only once on mount

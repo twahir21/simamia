@@ -78,6 +78,8 @@ export default function Stock() {
       );
     };
 
+    const isExpired = item.expiryDate && new Date(item.expiryDate) < new Date(new Date().setHours(0,0,0,0));
+
     return (
       <View className="bg-white mx-4 mb-3 rounded-2xl border border-slate-400 shadow-sm overflow-hidden">
         <View className="p-4">
@@ -142,9 +144,18 @@ export default function Stock() {
                 </View>
               </View>
 
-              <View className="flex-row my-2">
+              <View className="flex-row items-center my-2">
                 <Text className="text-xs font-bold text-slate-700">Expiry Date:</Text>
-                <Text className="text-xs text-red-500 pl-1">{item.expiryDate || 'No Expiry'}</Text>
+                
+                <Text className={`text-xs pl-1 ${isExpired ? 'text-red-600 font-black' : 'text-slate-500'}`}>
+                  {item.expiryDate || 'No Expiry'}
+                </Text>
+
+                {isExpired && (
+                  <View className="ml-2 bg-red-100 px-2 py-0.5 rounded-md border border-red-200">
+                    <Text className="text-[10px] font-black text-red-700 uppercase">Expired</Text>
+                  </View>
+                )}
               </View>
 
               <View className="flex-row my-2">
