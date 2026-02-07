@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,11 @@ import {
   Alert,
   Modal,
   TextInput,
-  BackHandler
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { initialSuppliers } from "@/types/orders.types";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 
 // ---------------- Types ----------------
 type Product = {
@@ -402,22 +401,6 @@ export default function SupplierPage() {
     router.push("/(tabs)/pages")
   }
 
-useFocusEffect(
-  useCallback(() => {
-    const onBackPress = () => {
-      router.replace("/(tabs)/pages");
-      return true; // block default back
-    };
-
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      onBackPress
-    );
-
-    // 🔴 REQUIRED cleanup
-    return () => subscription.remove();
-  }, [])
-);
   return (
     <View className="flex-1 bg-slate-100">
       <View className="px-4 pt-5 pb-2 bg-white border-b border-gray-400">

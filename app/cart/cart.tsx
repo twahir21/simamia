@@ -238,11 +238,11 @@ export default function ViewCartScreen() {
   return <>
     {/* Header */}
     <View className="px-4 pt-8 pb-2 bg-white border-b border-gray-400">
-        <View className="flex-row items-center gap-2 pt-3">
-            <Ionicons name="arrow-back-sharp" size={24} color="black" onPress={goBack}/>
-            <MaterialIcons name="shopping-cart-checkout" size={24} color="#1F2937" />
-            <Text className="text-xl font-bold text-gray-800">Cart</Text>
-        </View>        
+      <View className="flex-row items-center gap-2 pt-3">
+          <Ionicons name="arrow-back-sharp" size={24} color="black" onPress={goBack}/>
+          <MaterialIcons name="shopping-cart-checkout" size={24} color="#1F2937" />
+          <Text className="text-xl font-bold text-gray-800">Cart</Text>
+      </View>        
     </View>
     <View className="flex-1 bg-white p-4">
       <SuccessToast
