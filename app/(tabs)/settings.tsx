@@ -1,12 +1,17 @@
-import { View, Text, TouchableOpacity, ScrollView, Switch, Linking } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Switch, Linking, Modal } from "react-native";
 import { useEffect, useState } from "react";
 import { Feather, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { getSetting, saveSetting } from "@/db/settings.sqlite";
 import { router } from "expo-router";
+import { useLang } from "@/configs/languages/provider";
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(false);
+  // const [darkMode, setDarkMode] = useState(false);
   const [appLock, setAppLock] = useState(false);
+  const { lang, setLanguage, t } = useLang();
+  const [open, setOpen] = useState(false);
+
+  const label = lang === "en" ? "English" : "Swahili";
 
   // Mock Subscription Data (In a real app, fetch this from your DB or Global State)
   const [subscription, setSubscription] = useState({
@@ -81,25 +86,124 @@ export default function Settings() {
 
         {/* Preferences Group */}
         <View className="mb-6">
-          <Text className="text-lg font-bold text-gray-700 mb-2">Preferences</Text>
+          <Text className="text-lg font-bold text-gray-700 mb-2">
+            Preferences
+          </Text>
+
           <View className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-            <View className="flex-row justify-between items-center p-4 border-b border-gray-100">
-              <Text className="text-gray-800">Dark Mode</Text>
-              <Switch value={darkMode} onValueChange={setDarkMode} />
-            </View>
-            <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-gray-100">
+
+            {/* Language Row */}
+            <TouchableOpacity
+              onPress={() => setOpen(true)}
+              className="flex-row justify-between items-center p-4 border-b border-gray-100"
+            >
               <Text className="text-gray-800">Language</Text>
-              <Feather name="chevron-right" size={18} color="#9ca3af" />
+
+              <View className="flex-row items-center">
+                <Text className="text-gray-500 mr-2">{label}</Text>
+                <Feather name="chevron-right" size={18} color="#9ca3af" />
+              </View>
             </TouchableOpacity>
+
+            {/* App Lock */}
             <View className="flex-row justify-between items-center p-4">
               <Text className="text-gray-800">App Lock</Text>
-              <Switch 
-                value={appLock} 
-                onValueChange={toggleLock} 
-                trackColor={{ false: "#d1d5db", true: "#0ea5e9" }} 
+              <Switch
+                value={appLock}
+                onValueChange={toggleLock}
+                trackColor={{ false: "#d1d5db", true: "#0ea5e9" }}
               />
             </View>
           </View>
+
+          {/* Language Modal */}
+          <Modal
+            transparent
+            visible={open}
+            animationType="fade"
+            onRequestClose={() => setOpen(false)}
+          >
+            {/* Overlay */}
+            <View className="flex-1 justify-center items-center bg-black/40 px-8">
+
+              {/* Card */}
+              <View className="bg-white w-full rounded-3xl p-6 shadow-2xl">
+
+                <Text className="text-xl font-bold text-gray-900 mb-5 text-center">
+                  {t("selectLang")}
+                </Text>
+
+                {/* English */}
+                <TouchableOpacity
+                  className={`flex-row items-center justify-between p-4 rounded-2xl mb-3 ${
+                    lang === "en"
+                      ? "bg-blue-50 border border-blue-200"
+                      : "border border-slate-300"
+                  }`}
+                  onPress={() => {
+                    setLanguage("en");
+                    setOpen(false);
+                  }}
+                >
+                  <Text
+                    className={`text-base ${
+                      lang === "en"
+                        ? "text-blue-600 font-semibold"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    English
+                  </Text>
+
+                  {lang === "en" && (
+                    <View className="w-2 h-2 rounded-full bg-blue-600" />
+                  )}
+                </TouchableOpacity>
+
+                {/* Kiswahili */}
+                <TouchableOpacity
+                  className={`flex-row items-center justify-between p-4 rounded-2xl mb-4 ${
+                    lang === "sw"
+                      ? "bg-blue-50 border border-blue-200"
+                      : "border border-slate-300"
+                  }`}
+                  onPress={() => {
+                    setLanguage("sw");
+                    setOpen(false);
+                  }}
+                >
+                  <Text
+                    className={`text-base ${
+                      lang === "sw"
+                        ? "text-blue-600 font-semibold"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    Kiswahili
+                  </Text>
+
+                  {lang === "sw" && (
+                    <View className="w-2 h-2 rounded-full bg-blue-600" />
+                  )}
+                </TouchableOpacity>
+
+                {/* Divider */}
+                <View className="h-[1px] bg-gray-300 w-full mb-2" />
+
+                {/* Cancel */}
+                <TouchableOpacity
+                  className="py-3"
+                  onPress={() => setOpen(false)}
+                >
+                  <Text className="text-center text-gray-500 font-medium text-base">
+                    {t("cancel")}
+                  </Text>
+                </TouchableOpacity>
+
+              </View>
+            </View>
+          </Modal>
+
         </View>
 
         {/* Support Group */}

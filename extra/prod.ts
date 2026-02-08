@@ -32,5 +32,9 @@ const generateOrderBatch = (supplierName?: string): string => {
   return `${sup}-${dateStr}-${timeStr}`;
 };
 
+
+
+
+
 console.log(generateStockBatch("TWAHI R"));
 console.log(generateOrderBatch("azam"))

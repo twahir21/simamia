@@ -19,6 +19,7 @@ import ActionBar from './home/components/ui/ActionBar';
 import { useGlobalFilter } from '@/hooks/filter.hook';
 import GlobalFilterModal from './home/components/globalFilter';
 import { applyFilters } from '@/configs/filter.config';
+
 // types/order.ts
 export type DeliveryStatus = 'pending' | 'onway' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
@@ -45,6 +46,7 @@ const Orders = () => {
   const [ordersList, setOrdersList] = useState<Order[]>(orders);
 
   const globalFilter = useGlobalFilter();
+
 
 
   // Filter and sort logic
@@ -344,7 +346,7 @@ const Orders = () => {
                         {order.phone}
                       </Text>
                     </View>
-                    <Text className="text-3xl font-bold text-blue-600">{order.code}</Text>
+                    <Text className="text-3xl font-bold text-sky-600">{order.code}</Text>
                   </View>
                   <TouchableOpacity onPress={() =>
                     Alert.alert("Secondary Contact", `Choose other method to reach Twahir`, [
@@ -369,7 +371,6 @@ const Orders = () => {
                     {order.date} • {order.time}
                   </Text>
                 </View>
-                <Text className='mt-3 text-lg font-bold text-gray-700'>Order ID: #T08J</Text>
 
                   <View className="mt-3 bg-sky-50 rounded-lg p-3 border border-sky-500">
                     <Text className="text-lg font-bold text-gray-800">Cart :</Text>
@@ -402,7 +403,7 @@ const Orders = () => {
                   className="flex-1 py-4 items-center border-r border-sky-500"
                   onPress={() => callCustomer(order.phone)}
                 >
-                  <Text className="text-blue-600 font-semibold"><PhoneCall size={18} color="#10B981" /> Call</Text>
+                  <Text className="text-sky-600 font-semibold"><PhoneCall size={18} color="#10B981" /> Call</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   className="flex-1 py-4 items-center"

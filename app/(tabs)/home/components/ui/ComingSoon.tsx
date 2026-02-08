@@ -41,8 +41,8 @@ const ComingSoonPage = ({
         />
 
         {/* Icon & Illustration Area */}
-        <View className="bg-white p-8 rounded-[40px] shadow-2xl shadow-slate-200 items-center justify-center mb-8 border border-white">
-          <View className="bg-sky-200 p-6 rounded-full">
+        <View className="bg-slate-50 p-8 rounded-[32px] shadow-2xl shadow-slate-200 items-center justify-center mb-8">
+          <View className="bg-sky-100 p-6 rounded-full">
             <Ionicons name={icon} size={48} color="#0369a1" />
           </View>
         </View>

@@ -26,13 +26,14 @@ import { Feather, Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/
 import { router } from 'expo-router';
 import { Trash2 } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, FlatList, TextInput, Alert } from 'react-native';
+import { View, Text, Pressable, FlatList, TextInput, Alert, Modal, TouchableOpacity } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { saveCashSales, saveDigitalSales, validateCartStock } from '@/db/sales.sqlite';
 import SuccessToast from '../(tabs)/home/components/ui/Success';
 import { useAudioPlayer } from 'expo-audio';
 import { PaymentMethod } from '@/types/globals.types';
 import FoldableTips from './tips';
+import { saveExpenses } from '@/db/expenses.sqlite';
 
 
 
@@ -47,7 +48,8 @@ export default function ViewCartScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  const [modalVisible, setModalVisible] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
 
 
   const cart = useCartStore(state => state.items);
@@ -119,76 +121,81 @@ export default function ViewCartScreen() {
     ]);
     };
 
-  const saveSale = () => {
-    const isQtySafe = validateCartStock(cart);
+  const saveSale = async () => {
+    const { isValid, message } = validateCartStock(cart);
 
-    if(!isQtySafe.isValid) {
-      setErrorMessage(isQtySafe.message || "Insufficient stock for some items");
+    if (!isValid) {
+      setErrorMessage(message || "Insufficient stock for some items");
       return;
     }
-    switch(saleMode) {
-      case "cash": 
-        try {
-          // Save the amount BEFORE clearing cart
-          const currentSaleAmount = total;
-          
-          const saleId = saveCashSales(currentSaleAmount, cart);
-          
-          // Store the sale amount for the toast
-          setSaleAmount(currentSaleAmount);
-          setLastSaleId(saleId);
-          setToastVisible(true);
-    
-          if (successSound) {
-            successSound.seekTo(0);
-            successSound.play();
-          }
-    
-          clearCart();
-        } catch (e) {
-          setErrorMessage(`Database error: Could not save sale. ${e}`);
-        }
-      break;
 
-      case "debt": 
-      Alert.alert('Debts', 'Handling debts is coming soon');
-      break;
+    // 1. Handle modes that aren't ready yet
+    if (['debt', 'mixed'].includes(saleMode)) {
+      Alert.alert(
+        saleMode.charAt(0).toUpperCase() + saleMode.slice(1), 
+        'Handling this payment method is coming soon'
+      );
+      return;
+    }
 
-      case "digital":
-        try {
-          // Save the amount BEFORE clearing cart
-          const currentSaleAmount = total;
-          
-          const saleId = saveDigitalSales(currentSaleAmount, cart);
-          
-          // Store the sale amount for the toast
-          setSaleAmount(currentSaleAmount);
-          setLastSaleId(saleId);
-          setToastVisible(true);
-    
-          if (successSound) {
-            successSound.seekTo(0);
-            successSound.play();
-          }
-    
-          clearCart();
-        } catch (e) {
-          setErrorMessage(`Database error: Could not save sale. ${e}`);
-        }      
-      break;
+    try {
+      const currentSaleAmount = total;
+      let saleId: number;
 
-      case "mixed":
-        Alert.alert('Mixed', 'Handling mixed methods is coming soon');
-      break;
+      // 2. Strategy Pattern: Select the database function based on mode
+      if (saleMode === 'cash') {
+        saleId = saveCashSales(currentSaleAmount, cart);
+      } else {
+        saleId = saveDigitalSales(currentSaleAmount, cart);
+      }
+
+      // 3. Centralized Success Logic (Run once for any successful sale)
+      setSaleAmount(currentSaleAmount);
+      setLastSaleId(saleId);
+      setToastVisible(true);
+
+      if (successSound) {
+        successSound.seekTo(0);
+        successSound.play();
+      }
+
+      clearCart();
+
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      setErrorMessage(`Database error: Could not save sale. ${msg}`);
     }
   };
 
   const markOrder = () => {
+    console.log("Saving phone:", phoneNumber);
+    setModalVisible(false);
+    setPhoneNumber('');
     Alert.alert('Order', 'Marked as order for future processing/delivery');
   };
 
   const markExpense = () => {
-    Alert.alert('Expense', 'Marked as personal expense');
+   const { isValid, message } = validateCartStock(cart);
+
+    if (!isValid) {
+      setErrorMessage(message || "Insufficient stock for some items");
+      return;
+    }
+
+    try {
+      saveExpenses(total, cart)
+
+      if (successSound) {
+        successSound.seekTo(0);
+        successSound.play();
+      }
+
+      clearCart();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      setErrorMessage(`Database error: Could not save sale. ${msg}`);
+      console.error(msg)
+    }
   };
 
   // ---------------- UI ----------------
@@ -362,7 +369,7 @@ export default function ViewCartScreen() {
         <View className="flex-1">
           <Pressable
             disabled={cart.length === 0}
-            onPress={markOrder}
+            onPress={() => setModalVisible(true)}
             className={`w-full rounded-lg border border-gray-300 bg-white py-3 items-center justify-center`}
           >
             <Text className="text-gray-700 text-sm font-medium text-center">
@@ -384,6 +391,53 @@ export default function ViewCartScreen() {
           </Pressable>
         </View>
       </View>
+
+      {/* Modal  */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        {/* Overlay */}
+        <View className="flex-1 justify-center items-center bg-black/50 px-6">
+          
+          {/* Modal Card */}
+          <View className="bg-white w-full p-6 rounded-2xl shadow-lg">
+            <Text className="text-xl font-bold text-gray-800 mb-4">
+              Customer Details
+            </Text>
+            
+            <Text className="text-gray-500 mb-2">Phone Number</Text>
+            <TextInput
+              className="border border-gray-300 rounded-lg p-3 mb-6 text-lg"
+              placeholder="055 123 4567"
+              keyboardType="phone-pad"
+              onChangeText={setPhoneNumber}
+              value={phoneNumber}
+              autoFocus={true}
+            />
+
+            {/* Action Buttons */}
+            <View className="flex-row justify-end space-x-4">
+              <TouchableOpacity 
+                onPress={() => setModalVisible(false)}
+                className="px-4 py-2"
+              >
+                <Text className="text-gray-500 font-semibold">Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={markOrder}
+                className="bg-sky-800 px-6 py-2 rounded-lg"
+              >
+                <Text className="text-white font-semibold">Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+        </View>
+      </Modal>
 
     </View>
   </>
